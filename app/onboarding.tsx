@@ -1,0 +1,1046 @@
+import React, { useCallback, useRef, useState } from "react";
+import {
+  Dimensions,
+  FlatList,
+  Image,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  ViewToken,
+} from "react-native";
+import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
+
+import { GradientBackground } from "@/components/GradientBackground";
+import { PrimaryButton } from "@/components/PrimaryButton";
+import { ProgressDots } from "@/components/ProgressDots";
+import { SliderInput } from "@/components/SliderInput";
+import { useApp } from "@/context/AppContext";
+import { useColors } from "@/hooks/useColors";
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
+
+const ONBOARDING_IMAGE_1 = require("@/assets/mascot/onboarding1.png");
+const ONBOARDING_IMAGE_2 = require("@/assets/mascot/onboarding2.png");
+
+const GOALS = [
+  { id: "pray", label: "Pray more consistently" },
+  { id: "time", label: "Waste less time" },
+  { id: "closer", label: "Feel closer to Allah" },
+  { id: "scroll", label: "Stop doomscrolling" },
+  { id: "discipline", label: "Become more disciplined" },
+  { id: "grateful", label: "Practice more gratitude" },
+];
+
+const SOCIAL_APPS = [
+  { id: "instagram", label: "Instagram", icon: "logo-instagram" as const },
+  { id: "tiktok", label: "TikTok", icon: "musical-notes" as const },
+  { id: "twitter", label: "X / Twitter", icon: "logo-twitter" as const },
+  { id: "youtube", label: "YouTube", icon: "logo-youtube" as const },
+  { id: "reddit", label: "Reddit", icon: "logo-reddit" as const },
+  { id: "snapchat", label: "Snapchat", icon: "camera" as const },
+  { id: "facebook", label: "Facebook", icon: "logo-facebook" as const },
+  { id: "whatsapp", label: "WhatsApp", icon: "chatbubble-ellipses" as const },
+];
+
+const STRUGGLE_TIMES = [
+  { id: "morning", label: "Morning", sub: "Right after waking up" },
+  { id: "afternoon", label: "After school / work" },
+  { id: "evening", label: "Evening", sub: "Wind-down time" },
+  { id: "latenight", label: "Late night", sub: "Before sleep" },
+  { id: "bored", label: "When bored", sub: "Any time" },
+];
+
+const TOTAL_STEPS = 17;
+
+export default function OnboardingScreen() {
+  const insets = useSafeAreaInsets();
+  const colors = useColors();
+  const { state, updateProfile, setOnboardingStep } = useApp();
+  const [step, setStep] = useState(0);
+
+  const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+  const [selectedApps, setSelectedApps] = useState<string[]>(["instagram", "tiktok", "twitter"]);
+  const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
+  const [mood, setMood] = useState(5);
+  const [closeness, setCloseness] = useState(5);
+
+  const topPadding = Platform.OS === "web" ? 67 : insets.top;
+  const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
+
+  const goNext = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (step < TOTAL_STEPS - 1) {
+      setStep((s) => s + 1);
+      setOnboardingStep(step + 1);
+    } else {
+      finishOnboarding();
+    }
+  }, [step]);
+
+  const goBack = useCallback(() => {
+    if (step > 0) {
+      setStep((s) => s - 1);
+    }
+  }, [step]);
+
+  const finishOnboarding = () => {
+    updateProfile({
+      goals: selectedGoals,
+      appsToBlock: selectedApps,
+      struggleTimes: selectedTimes,
+      moodBaseline: mood,
+      closenessBaseline: closeness,
+      onboardingComplete: true,
+    });
+    router.replace("/(tabs)");
+  };
+
+  const toggleGoal = (id: string) => {
+    Haptics.selectionAsync();
+    setSelectedGoals((prev) =>
+      prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]
+    );
+  };
+
+  const toggleApp = (id: string) => {
+    Haptics.selectionAsync();
+    setSelectedApps((prev) =>
+      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
+    );
+  };
+
+  const toggleTime = (id: string) => {
+    Haptics.selectionAsync();
+    setSelectedTimes((prev) =>
+      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
+    );
+  };
+
+  const renderStep = () => {
+    switch (step) {
+      case 0:
+        return (
+          <View style={styles.fullScreen}>
+            <Image
+              source={ONBOARDING_IMAGE_1}
+              style={styles.fullImage}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={["transparent", "rgba(13,6,32,0.65)", "#0d0620"]}
+              style={styles.imageOverlay}
+            />
+            <Animated.View
+              entering={FadeInDown.delay(300).duration(600)}
+              style={styles.bottomTextBlock}
+            >
+              <Text style={styles.heroTitle}>
+                social media addiction is pulling you away from Allah
+              </Text>
+              <Text style={styles.heroSub}>
+                Endless scrolling can slowly pull you away from what matters most
+              </Text>
+            </Animated.View>
+          </View>
+        );
+
+      case 1:
+        return (
+          <View style={styles.fullScreen}>
+            <Image
+              source={ONBOARDING_IMAGE_2}
+              style={styles.fullImage}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={["transparent", "rgba(13,6,32,0.55)", "#0d0620"]}
+              style={styles.imageOverlay}
+            />
+            <Animated.View
+              entering={FadeInDown.delay(300).duration(600)}
+              style={styles.bottomTextBlock}
+            >
+              <Text style={styles.heroTitle}>You can always return</Text>
+              <Text style={styles.heroSub}>
+                Even 30 seconds of dhikr can help you choose faith first again
+              </Text>
+            </Animated.View>
+          </View>
+        );
+
+      case 2:
+        return (
+          <CenteredStep>
+            <Image
+              source={require("@/assets/mascot/mascot_default.png")}
+              style={styles.mascotMedium}
+              resizeMode="contain"
+            />
+            <Text style={styles.stepTitle}>Before you open Instagram,{"\n"}pause first.</Text>
+            <Text style={styles.stepSub}>
+              Dhikr gently intercepts distracting apps{"\n"}and invites you to reconnect — in under 30 seconds.
+            </Text>
+            <View style={styles.pillRow}>
+              {["30 sec check-in", "No guilt", "Daily habit"].map((t) => (
+                <View key={t} style={styles.featurePill}>
+                  <Text style={styles.pillText}>{t}</Text>
+                </View>
+              ))}
+            </View>
+          </CenteredStep>
+        );
+
+      case 3:
+        return (
+          <CenteredStep>
+            <Text style={[styles.stepTitle, { marginTop: 0 }]}>Choose what to{"\n"}protect your time from.</Text>
+            <Text style={styles.stepSub}>These apps will ask for a short pause before opening.</Text>
+            <View style={styles.appGrid}>
+              {SOCIAL_APPS.map((app) => {
+                const selected = selectedApps.includes(app.id);
+                return (
+                  <Pressable
+                    key={app.id}
+                    style={[
+                      styles.appCard,
+                      selected && styles.appCardSelected,
+                      { borderColor: selected ? colors.primary : colors.border },
+                    ]}
+                    onPress={() => toggleApp(app.id)}
+                  >
+                    <Ionicons
+                      name={app.icon}
+                      size={22}
+                      color={selected ? colors.primary : colors.mutedForeground}
+                    />
+                    <Text style={[styles.appLabel, { color: selected ? colors.foreground : colors.mutedForeground }]}>
+                      {app.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </CenteredStep>
+        );
+
+      case 4:
+        return (
+          <CenteredStep>
+            <Image
+              source={require("@/assets/mascot/mascot_tasbeeh.png")}
+              style={styles.mascotMedium}
+              resizeMode="contain"
+            />
+            <Text style={styles.stepTitle}>Your 30-second{"\n"}check-in.</Text>
+            <View style={styles.ritualCards}>
+              {[
+                { num: "1", title: "How am I feeling?", sub: "Quick 1–10 check-in" },
+                { num: "2", title: "How close to Allah?", sub: "Honest reflection" },
+                { num: "3", title: "Dhikr or Dua", sub: "Under 30 seconds" },
+              ].map((r) => (
+                <View key={r.num} style={styles.ritualCard}>
+                  <View style={styles.ritualNum}>
+                    <Text style={styles.ritualNumText}>{r.num}</Text>
+                  </View>
+                  <View style={styles.ritualInfo}>
+                    <Text style={styles.ritualTitle}>{r.title}</Text>
+                    <Text style={styles.ritualSub}>{r.sub}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </CenteredStep>
+        );
+
+      case 5:
+        return (
+          <CenteredStep>
+            <Text style={styles.stepTitle}>What are you{"\n"}hoping to change?</Text>
+            <Text style={styles.stepSub}>Choose all that resonate.</Text>
+            <View style={styles.goalList}>
+              {GOALS.map((g) => {
+                const sel = selectedGoals.includes(g.id);
+                return (
+                  <Pressable
+                    key={g.id}
+                    style={[
+                      styles.goalItem,
+                      sel && styles.goalItemSelected,
+                      { borderColor: sel ? colors.primary : colors.border },
+                    ]}
+                    onPress={() => toggleGoal(g.id)}
+                  >
+                    <View style={[styles.goalCheck, sel && { backgroundColor: colors.primary }]}>
+                      {sel && <Ionicons name="checkmark" size={14} color="#1a0a2e" />}
+                    </View>
+                    <Text style={[styles.goalLabel, { color: sel ? colors.foreground : colors.mutedForeground }]}>
+                      {g.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </CenteredStep>
+        );
+
+      case 6:
+        return (
+          <CenteredStep>
+            <Text style={styles.stepTitle}>When do you{"\n"}struggle most?</Text>
+            <Text style={styles.stepSub}>We'll send gentle reminders at the right moments.</Text>
+            <View style={styles.goalList}>
+              {STRUGGLE_TIMES.map((t) => {
+                const sel = selectedTimes.includes(t.id);
+                return (
+                  <Pressable
+                    key={t.id}
+                    style={[
+                      styles.goalItem,
+                      sel && styles.goalItemSelected,
+                      { borderColor: sel ? colors.primary : colors.border },
+                    ]}
+                    onPress={() => toggleTime(t.id)}
+                  >
+                    <View style={[styles.goalCheck, sel && { backgroundColor: colors.primary }]}>
+                      {sel && <Ionicons name="checkmark" size={14} color="#1a0a2e" />}
+                    </View>
+                    <View>
+                      <Text style={[styles.goalLabel, { color: sel ? colors.foreground : colors.mutedForeground }]}>
+                        {t.label}
+                      </Text>
+                      {t.sub && (
+                        <Text style={[styles.ritualSub, { marginTop: 1 }]}>{t.sub}</Text>
+                      )}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </CenteredStep>
+        );
+
+      case 7:
+        return (
+          <CenteredStep>
+            <Text style={styles.stepTitle}>How have you been{"\n"}feeling lately?</Text>
+            <Text style={styles.stepSub}>Be honest. This is just for you.</Text>
+            <View style={styles.sliderBlock}>
+              <Text style={styles.sliderLabel}>
+                {mood <= 3 ? "Not great" : mood <= 6 ? "Getting by" : mood <= 8 ? "Pretty good" : "Really well"}
+              </Text>
+              <SliderInput value={mood} onChange={setMood} min={1} max={10} />
+              <Text style={styles.sliderHint}>1 = struggling · 10 = thriving</Text>
+            </View>
+          </CenteredStep>
+        );
+
+      case 8:
+        return (
+          <CenteredStep>
+            <Text style={styles.stepTitle}>How close to Allah{"\n"}do you feel lately?</Text>
+            <Text style={styles.stepSub}>No judgment. This is your private baseline.</Text>
+            <View style={styles.sliderBlock}>
+              <Text style={styles.sliderLabel}>
+                {closeness <= 3 ? "Distant" : closeness <= 6 ? "Somewhere in between" : closeness <= 8 ? "Connected" : "Very close"}
+              </Text>
+              <SliderInput value={closeness} onChange={setCloseness} min={1} max={10} />
+              <Text style={styles.sliderHint}>1 = very distant · 10 = deeply connected</Text>
+            </View>
+          </CenteredStep>
+        );
+
+      case 9:
+        return (
+          <CenteredStep>
+            <Image
+              source={require("@/assets/mascot/mascot_default.png")}
+              style={styles.mascotMedium}
+              resizeMode="contain"
+            />
+            <Text style={styles.stepTitle}>Here's how your{"\n"}check-in works.</Text>
+            <View style={styles.previewCards}>
+              <View style={styles.previewCard}>
+                <Text style={styles.previewIcon}>  </Text>
+                <Text style={styles.previewCardTitle}>Quick check-in</Text>
+                <Text style={styles.previewCardSub}>How are you feeling?</Text>
+              </View>
+              <View style={styles.previewCard}>
+                <Ionicons name="heart" size={22} color="#C4A2F7" />
+                <Text style={styles.previewCardTitle}>Closeness check</Text>
+                <Text style={styles.previewCardSub}>How close to Allah?</Text>
+              </View>
+              <View style={styles.previewCard}>
+                <Ionicons name="sparkles" size={22} color="#F5C842" />
+                <Text style={styles.previewCardTitle}>Dhikr or Dua</Text>
+                <Text style={styles.previewCardSub}>Under 30 seconds</Text>
+              </View>
+            </View>
+          </CenteredStep>
+        );
+
+      case 10:
+        return (
+          <CenteredStep>
+            <Ionicons name="book-outline" size={60} color="#C4A2F7" />
+            <Text style={styles.stepTitle}>Begin each day{"\n"}with something grounding.</Text>
+            <View style={styles.verseCard}>
+              <Text style={styles.verseArabic}>وَلَذِكْرُ اللَّهِ أَكْبَرُ</Text>
+              <Text style={styles.verseTranslit}>Wa ladhikru-Llāhi akbar</Text>
+              <Text style={styles.verseTranslation}>"And the remembrance of Allah is greatest."</Text>
+              <Text style={styles.verseRef}>— Quran 29:45</Text>
+            </View>
+            <Text style={styles.stepSub}>A new verse every morning. Your anchor before the day begins.</Text>
+          </CenteredStep>
+        );
+
+      case 11:
+        return (
+          <CenteredStep>
+            <Image
+              source={require("@/assets/mascot/mascot_celebration.png")}
+              style={styles.mascotMedium}
+              resizeMode="contain"
+            />
+            <Text style={styles.stepTitle}>Small consistency{"\n"}matters most.</Text>
+            <View style={styles.streakPreview}>
+              {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+                <View key={i} style={[styles.streakDay, i < 4 && styles.streakDayActive]}>
+                  <Text style={[styles.streakDayLabel, { color: i < 4 ? "#1a0a2e" : "#9b80c8" }]}>{d}</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={styles.stepSub}>
+              Every day you complete your check-in builds your streak.{"\n"}
+              Not perfection — just return.
+            </Text>
+          </CenteredStep>
+        );
+
+      case 12:
+        return (
+          <CenteredStep>
+            <Ionicons name="notifications-outline" size={60} color="#C4A2F7" />
+            <Text style={styles.stepTitle}>Let us remind you{"\n"}before distraction sets in.</Text>
+            <View style={styles.notifList}>
+              {[
+                { icon: "sunny-outline" as const, label: "Morning nudge" },
+                { icon: "moon-outline" as const, label: "Before sleep" },
+                { icon: "phone-portrait-outline" as const, label: "When you're about to scroll" },
+              ].map((n) => (
+                <View key={n.label} style={styles.notifItem}>
+                  <Ionicons name={n.icon} size={20} color="#C4A2F7" />
+                  <Text style={styles.notifLabel}>{n.label}</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={styles.stepSub}>Reminders that feel like a gentle hand on your shoulder, not a loud alarm.</Text>
+          </CenteredStep>
+        );
+
+      case 13:
+        return (
+          <CenteredStep>
+            <Ionicons name="shield-checkmark-outline" size={60} color="#C4A2F7" />
+            <Text style={styles.stepTitle}>How the{"\n"}protection works.</Text>
+            <View style={styles.permissionExplain}>
+              <Text style={styles.permExplainBody}>
+                Dhikr uses Screen Time access to gently pause your selected apps
+                until your check-in is complete.{"\n\n"}
+                You stay in complete control — you can always adjust or remove
+                any protected app at any time.{"\n\n"}
+                No data is shared. Everything stays private on your device.
+              </Text>
+            </View>
+          </CenteredStep>
+        );
+
+      case 14:
+        return (
+          <CenteredStep>
+            <Image
+              source={require("@/assets/mascot/mascot_tasbeeh.png")}
+              style={styles.mascotMedium}
+              resizeMode="contain"
+            />
+            <Text style={styles.stepTitle}>You've done the{"\n"}hardest part already.</Text>
+            <View style={styles.recapList}>
+              {selectedGoals.slice(0, 2).map((g) => {
+                const goal = GOALS.find((go) => go.id === g);
+                return goal ? (
+                  <View key={g} style={styles.recapItem}>
+                    <Ionicons name="checkmark-circle" size={18} color="#C4A2F7" />
+                    <Text style={styles.recapLabel}>{goal.label}</Text>
+                  </View>
+                ) : null;
+              })}
+              <View style={styles.recapItem}>
+                <Ionicons name="checkmark-circle" size={18} color="#C4A2F7" />
+                <Text style={styles.recapLabel}>{selectedApps.length} apps to protect</Text>
+              </View>
+              <View style={styles.recapItem}>
+                <Ionicons name="checkmark-circle" size={18} color="#C4A2F7" />
+                <Text style={styles.recapLabel}>Your baseline is set</Text>
+              </View>
+            </View>
+            <Text style={styles.stepSub}>
+              One small step is all it takes to start.
+            </Text>
+          </CenteredStep>
+        );
+
+      case 15:
+        return (
+          <CenteredStep>
+            <Image
+              source={require("@/assets/mascot/mascot_celebration.png")}
+              style={[styles.mascotMedium, { marginBottom: 8 }]}
+              resizeMode="contain"
+            />
+            <Text style={styles.stepTitle}>Start your free trial.</Text>
+            <Text style={styles.stepSub}>Everything you need to choose faith first, every day.</Text>
+            <View style={[styles.paywallCard, styles.paywallCardBest]}>
+              <View style={styles.paywallBestBadge}>
+                <Text style={styles.paywallBestText}>Best Value</Text>
+              </View>
+              <Text style={styles.paywallPlan}>Yearly</Text>
+              <Text style={styles.paywallPrice}>$3.99 / month</Text>
+              <Text style={styles.paywallSub}>$47.99 billed annually · 3-day free trial</Text>
+            </View>
+            <View style={styles.paywallCard}>
+              <Text style={styles.paywallPlan}>Weekly</Text>
+              <Text style={styles.paywallPrice}>$1.99 / week</Text>
+            </View>
+            <Pressable onPress={goNext}>
+              <Text style={[styles.restoreText, { color: colors.mutedForeground }]}>Restore Purchases</Text>
+            </Pressable>
+          </CenteredStep>
+        );
+
+      case 16:
+        return (
+          <CenteredStep>
+            <Image
+              source={require("@/assets/mascot/onboarding2.png")}
+              style={[styles.mascotLarge, { marginTop: 0 }]}
+              resizeMode="contain"
+            />
+            <Text style={styles.stepTitle}>You're ready.</Text>
+            <Text style={styles.stepSub}>
+              Even 30 seconds of remembrance can change the direction of your day.{"\n\n"}
+              Let's begin.
+            </Text>
+          </CenteredStep>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const isImageStep = step === 0 || step === 1;
+  const isLastStep = step === TOTAL_STEPS - 1;
+  const isPaywallStep = step === 15;
+
+  const getNextLabel = () => {
+    if (isLastStep) return "Begin";
+    if (isPaywallStep) return "Start Free Trial";
+    if (step === 12 || step === 13) return "Allow";
+    return "Continue";
+  };
+
+  return (
+    <GradientBackground style={{ flex: 1 }}>
+      <View style={[styles.container, { paddingTop: topPadding, paddingBottom: bottomPadding }]}>
+        {!isImageStep && (
+          <View style={styles.header}>
+            {step > 0 && (
+              <Pressable onPress={goBack} style={styles.backBtn}>
+                <Ionicons name="chevron-back" size={24} color="rgba(196,162,247,0.7)" />
+              </Pressable>
+            )}
+            <ProgressDots total={TOTAL_STEPS} current={step} />
+            <View style={styles.backBtn} />
+          </View>
+        )}
+
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            isImageStep && styles.scrollContentFull,
+          ]}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          {renderStep()}
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <PrimaryButton
+            label={getNextLabel()}
+            onPress={goNext}
+            style={styles.nextBtn}
+            variant={isPaywallStep ? "gold" : "primary"}
+          />
+        </View>
+      </View>
+    </GradientBackground>
+  );
+}
+
+function CenteredStep({ children }: { children: React.ReactNode }) {
+  return (
+    <Animated.View entering={FadeIn.duration(400)} style={styles.centeredStep}>
+      {children}
+    </Animated.View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+  },
+  scrollContentFull: {
+    paddingHorizontal: 0,
+    paddingBottom: 0,
+  },
+  centeredStep: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 24,
+    paddingTop: 20,
+    paddingHorizontal: 4,
+  },
+  fullScreen: {
+    width: SCREEN_W,
+    height: SCREEN_H * 0.75,
+    position: "relative",
+  },
+  fullImage: {
+    width: "100%",
+    height: "100%",
+  },
+  imageOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: "60%",
+  },
+  bottomTextBlock: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 28,
+    paddingBottom: 32,
+    gap: 12,
+  },
+  smallTag: {
+    fontSize: 13,
+    color: "rgba(196,162,247,0.7)",
+    fontFamily: "Inter_400Regular",
+    letterSpacing: 0.5,
+  },
+  heroTitle: {
+    fontSize: 30,
+    fontFamily: "Inter_700Bold",
+    color: "#f0eaff",
+    lineHeight: 38,
+    maxWidth: 320,
+  },
+  heroSub: {
+    fontSize: 16,
+    color: "rgba(224,208,255,0.75)",
+    fontFamily: "Inter_400Regular",
+    lineHeight: 25,
+    maxWidth: 300,
+  },
+  mascotMedium: {
+    width: 140,
+    height: 140,
+  },
+  mascotLarge: {
+    width: 240,
+    height: 240,
+  },
+  stepTitle: {
+    fontSize: 28,
+    fontFamily: "Inter_700Bold",
+    color: "#f0eaff",
+    textAlign: "center",
+    lineHeight: 37,
+    marginTop: 4,
+    maxWidth: 300,
+  },
+  stepSub: {
+    fontSize: 15,
+    color: "rgba(196,162,247,0.75)",
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    lineHeight: 23,
+    paddingHorizontal: 4,
+    maxWidth: 310,
+  },
+  pillRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 4,
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  featurePill: {
+    backgroundColor: "rgba(196,162,247,0.12)",
+    borderColor: "rgba(196,162,247,0.25)",
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  pillText: {
+    color: "#C4A2F7",
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+  },
+  appGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    justifyContent: "center",
+    maxWidth: 340,
+  },
+  appCard: {
+    width: "46%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "rgba(45,26,74,0.6)",
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+  },
+  appCardSelected: {
+    backgroundColor: "rgba(196,162,247,0.1)",
+  },
+  appLabel: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+  },
+  ritualCards: {
+    gap: 12,
+    width: "100%",
+  },
+  ritualCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(45,26,74,0.6)",
+    borderRadius: 16,
+    padding: 16,
+    gap: 14,
+    borderWidth: 1,
+    borderColor: "rgba(196,162,247,0.12)",
+  },
+  ritualNum: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(196,162,247,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ritualNumText: {
+    color: "#C4A2F7",
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+  },
+  ritualInfo: {
+    flex: 1,
+  },
+  ritualTitle: {
+    color: "#f0eaff",
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+  },
+  ritualSub: {
+    color: "#9b80c8",
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    marginTop: 2,
+  },
+  goalList: {
+    gap: 10,
+    width: "100%",
+  },
+  goalItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "rgba(45,26,74,0.5)",
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingVertical: 15,
+    paddingHorizontal: 16,
+  },
+  goalItemSelected: {
+    backgroundColor: "rgba(196,162,247,0.08)",
+  },
+  goalCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: "rgba(196,162,247,0.4)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  goalLabel: {
+    fontSize: 15,
+    fontFamily: "Inter_500Medium",
+    flex: 1,
+  },
+  sliderBlock: {
+    alignItems: "center",
+    gap: 16,
+    paddingTop: 20,
+  },
+  sliderLabel: {
+    fontSize: 22,
+    fontFamily: "Inter_600SemiBold",
+    color: "#f0eaff",
+  },
+  sliderHint: {
+    fontSize: 13,
+    color: "rgba(155,128,200,0.7)",
+    fontFamily: "Inter_400Regular",
+  },
+  previewCards: {
+    flexDirection: "row",
+    gap: 10,
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  previewCard: {
+    width: 100,
+    backgroundColor: "rgba(45,26,74,0.7)",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(196,162,247,0.15)",
+    paddingVertical: 18,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    gap: 8,
+  },
+  previewIcon: {
+    fontSize: 22,
+  },
+  previewCardTitle: {
+    color: "#f0eaff",
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "center",
+  },
+  previewCardSub: {
+    color: "#9b80c8",
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+  },
+  verseCard: {
+    backgroundColor: "rgba(45,26,74,0.7)",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(245,200,66,0.2)",
+    padding: 24,
+    width: "100%",
+    alignItems: "center",
+    gap: 10,
+  },
+  verseArabic: {
+    fontSize: 26,
+    color: "#F5C842",
+    fontFamily: "Inter_700Bold",
+    textAlign: "center",
+    lineHeight: 40,
+  },
+  verseTranslit: {
+    color: "rgba(240,234,255,0.8)",
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    fontStyle: "italic",
+    textAlign: "center",
+  },
+  verseTranslation: {
+    color: "#f0eaff",
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  verseRef: {
+    color: "#9b80c8",
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+  },
+  streakPreview: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+  },
+  streakDay: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(45,26,74,0.6)",
+    borderWidth: 1,
+    borderColor: "rgba(196,162,247,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  streakDayActive: {
+    backgroundColor: "#C4A2F7",
+    borderColor: "#C4A2F7",
+  },
+  streakDayLabel: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+  },
+  notifList: {
+    gap: 12,
+    width: "100%",
+  },
+  notifItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: "rgba(45,26,74,0.5)",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(196,162,247,0.12)",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  notifLabel: {
+    color: "#f0eaff",
+    fontSize: 15,
+    fontFamily: "Inter_500Medium",
+  },
+  permissionExplain: {
+    backgroundColor: "rgba(45,26,74,0.6)",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(196,162,247,0.12)",
+    padding: 24,
+    width: "100%",
+  },
+  permExplainBody: {
+    color: "rgba(224,208,255,0.85)",
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 24,
+    textAlign: "center",
+  },
+  recapList: {
+    gap: 10,
+    width: "100%",
+  },
+  recapItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 2,
+  },
+  recapLabel: {
+    color: "#f0eaff",
+    fontSize: 15,
+    fontFamily: "Inter_500Medium",
+  },
+  paywallCard: {
+    width: "100%",
+    backgroundColor: "rgba(45,26,74,0.6)",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(196,162,247,0.15)",
+    padding: 20,
+    gap: 4,
+    position: "relative",
+  },
+  paywallCardBest: {
+    borderColor: "#F5C842",
+    backgroundColor: "rgba(245,200,66,0.06)",
+  },
+  paywallBestBadge: {
+    position: "absolute",
+    top: -12,
+    right: 20,
+    backgroundColor: "#F5C842",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  paywallBestText: {
+    color: "#1a0a2e",
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+  },
+  paywallPlan: {
+    color: "#f0eaff",
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+  },
+  paywallPrice: {
+    color: "#C4A2F7",
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+  },
+  paywallSub: {
+    color: "#9b80c8",
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+  },
+  restoreText: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    textDecorationLine: "underline",
+  },
+  footer: {
+    paddingHorizontal: 24,
+    paddingBottom: 12,
+    gap: 4,
+  },
+  nextBtn: {
+    width: "100%",
+  },
+});
