@@ -18,10 +18,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { GradientBackground } from "@/components/GradientBackground";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { SliderInput } from "@/components/SliderInput";
+import { QURANIC_DUAS, type Dua } from "@/constants/quranicDuas";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
+import { getRandomDua } from "@/utils/getRandomDua";
 
 type RitualStep = "intercept" | "mood" | "closeness" | "choose" | "dhikr" | "dua" | "complete";
+
+let lastShownRitualDuaId: Dua["id"] | undefined;
 
 const DHIKR_ITEMS = [
   {
@@ -44,13 +48,6 @@ const DHIKR_ITEMS = [
   },
 ];
 
-const DUA_CONTENT = {
-  arabic: "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ",
-  translit: "Rabbanā ātinā fī-d-dunyā ḥasanatan wa fī-l-ākhirati ḥasanatan wa qinā 'adhāba-n-nār",
-  meaning: "Our Lord, give us good in this world and good in the next, and protect us from the punishment of the Fire.",
-  ref: "Quran 2:201",
-};
-
 export default function RitualScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
@@ -61,6 +58,19 @@ export default function RitualScreen() {
   const [closeness, setCloseness] = useState(5);
   const [dhikrCount, setDhikrCount] = useState(0);
   const [dhikrIndex, setDhikrIndex] = useState(0);
+  const [selectedDua] = useState<Dua>(() => {
+    try {
+      const nextDua = getRandomDua(lastShownRitualDuaId);
+      lastShownRitualDuaId = nextDua.id;
+
+      return nextDua;
+    } catch {
+      const fallbackDua = QURANIC_DUAS[0];
+      lastShownRitualDuaId = fallbackDua?.id;
+
+      return fallbackDua;
+    }
+  });
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
@@ -231,12 +241,10 @@ export default function RitualScreen() {
           <Animated.View entering={FadeIn.duration(400)} style={styles.centered}>
             <Text style={styles.sectionQuestion}>Read slowly.{"\n"}Let it sink in.</Text>
             <View style={styles.duaCard}>
-              <Text style={styles.duaArabic}>{DUA_CONTENT.arabic}</Text>
+              <Text style={styles.duaArabic}>{selectedDua.arabic}</Text>
               <View style={styles.divider} />
-              <Text style={styles.duaTranslit}>{DUA_CONTENT.translit}</Text>
-              <View style={styles.divider} />
-              <Text style={styles.duaMeaning}>{DUA_CONTENT.meaning}</Text>
-              <Text style={styles.duaRef}>{DUA_CONTENT.ref}</Text>
+              <Text style={styles.duaEnglish}>{selectedDua.english}</Text>
+              <Text style={styles.duaRef}>{selectedDua.reference}</Text>
             </View>
             <PrimaryButton
               label="I've read it"
@@ -460,36 +468,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   duaArabic: {
-    fontSize: 20,
+    width: "100%",
+    fontSize: 24,
     color: "#F5C842",
     fontFamily: "Inter_700Bold",
     textAlign: "center",
-    lineHeight: 34,
+    writingDirection: "rtl",
+    lineHeight: 42,
   },
   divider: {
     width: "60%",
     height: 1,
     backgroundColor: "rgba(196,162,247,0.1)",
   },
-  duaTranslit: {
-    color: "rgba(240,234,255,0.75)",
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    fontStyle: "italic",
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  duaMeaning: {
+  duaEnglish: {
+    width: "100%",
     color: "#f0eaff",
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: "Inter_400Regular",
     textAlign: "center",
-    lineHeight: 22,
+    lineHeight: 24,
   },
   duaRef: {
     color: "#9b80c8",
     fontSize: 12,
     fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    lineHeight: 18,
   },
   completionGlow: {
     shadowColor: "#F5C842",
