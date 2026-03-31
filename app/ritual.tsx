@@ -18,35 +18,17 @@ import { LinearGradient } from "expo-linear-gradient";
 import { GradientBackground } from "@/components/GradientBackground";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { SliderInput } from "@/components/SliderInput";
+import { BLOCKED_DHIKR, type BlockedDhikr } from "@/constants/blockedDhikr";
 import { QURANIC_DUAS, type Dua } from "@/constants/quranicDuas";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
+import { getRandomBlockedDhikr } from "@/utils/getRandomBlockedDhikr";
 import { getRandomDua } from "@/utils/getRandomDua";
 
 type RitualStep = "intercept" | "mood" | "closeness" | "choose" | "dhikr" | "dua" | "complete";
 
 let lastShownRitualDuaId: Dua["id"] | undefined;
-
-const DHIKR_ITEMS = [
-  {
-    arabic: "سُبْحَانَ اللَّهِ",
-    translit: "Subhāna-Llāh",
-    meaning: "Glory be to Allah",
-    count: 33,
-  },
-  {
-    arabic: "الحَمْدُ لِلَّهِ",
-    translit: "Al-hamdu li-Llāh",
-    meaning: "All praise is to Allah",
-    count: 33,
-  },
-  {
-    arabic: "اللَّهُ أَكْبَرُ",
-    translit: "Allāhu akbar",
-    meaning: "Allah is the Greatest",
-    count: 34,
-  },
-];
+let lastShownRitualDhikrId: BlockedDhikr["id"] | undefined;
 
 export default function RitualScreen() {
   const insets = useSafeAreaInsets();
@@ -57,41 +39,63 @@ export default function RitualScreen() {
   const [mood, setMood] = useState(5);
   const [closeness, setCloseness] = useState(5);
   const [dhikrCount, setDhikrCount] = useState(0);
-  const [dhikrIndex, setDhikrIndex] = useState(0);
-  const [selectedDua] = useState<Dua>(() => {
-    try {
-      const nextDua = getRandomDua(lastShownRitualDuaId);
-      lastShownRitualDuaId = nextDua.id;
-
-      return nextDua;
-    } catch {
-      const fallbackDua = QURANIC_DUAS[0];
-      lastShownRitualDuaId = fallbackDua?.id;
-
-      return fallbackDua;
-    }
-  });
+  const [selectedDhikr, setSelectedDhikr] = useState<BlockedDhikr | null>(null);
+  const [selectedDua, setSelectedDua] = useState<Dua | null>(null);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const totalDhikrCount = DHIKR_ITEMS.reduce((acc, d) => acc + d.count, 0);
+  const handleSelectDhikr = () => {
+    setSelectedDua(null);
+    setDhikrCount(0);
+    setSelectedDhikr(() => {
+      try {
+        const nextDhikr = getRandomBlockedDhikr(lastShownRitualDhikrId);
+        lastShownRitualDhikrId = nextDhikr.id;
+
+        return nextDhikr;
+      } catch {
+        const fallbackDhikr = BLOCKED_DHIKR[0] ?? null;
+        lastShownRitualDhikrId = fallbackDhikr?.id;
+
+        return fallbackDhikr;
+      }
+    });
+    setRitualStep("dhikr");
+  };
+
+  const handleSelectDua = () => {
+    setSelectedDhikr(null);
+    setSelectedDua(() => {
+      try {
+        const nextDua = getRandomDua(lastShownRitualDuaId);
+        lastShownRitualDuaId = nextDua.id;
+
+        return nextDua;
+      } catch {
+        const fallbackDua = QURANIC_DUAS[0] ?? null;
+        lastShownRitualDuaId = fallbackDua?.id;
+
+        return fallbackDua;
+      }
+    });
+    setRitualStep("dua");
+  };
 
   const handleDhikrTap = () => {
+    if (!selectedDhikr) {
+      return;
+    }
+
+    if (dhikrCount >= selectedDhikr.count) {
+      return;
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const newCount = dhikrCount + 1;
     setDhikrCount(newCount);
 
-    let cumulative = 0;
-    for (let i = 0; i < DHIKR_ITEMS.length; i++) {
-      cumulative += DHIKR_ITEMS[i].count;
-      if (newCount <= cumulative) {
-        setDhikrIndex(i);
-        break;
-      }
-    }
-
-    if (newCount >= totalDhikrCount) {
+    if (newCount >= selectedDhikr.count) {
       setTimeout(() => setRitualStep("complete"), 300);
     }
   };
@@ -177,7 +181,7 @@ export default function RitualScreen() {
             <View style={styles.chooseGrid}>
               <Pressable
                 style={styles.chooseCard}
-                onPress={() => setRitualStep("dhikr")}
+                onPress={handleSelectDhikr}
               >
                 <LinearGradient
                   colors={["#2d1a4a", "#3d2460"]}
@@ -194,7 +198,7 @@ export default function RitualScreen() {
               </Pressable>
               <Pressable
                 style={styles.chooseCard}
-                onPress={() => setRitualStep("dua")}
+                onPress={handleSelectDua}
               >
                 <LinearGradient
                   colors={["#2d1a4a", "#3d2460"]}
@@ -210,12 +214,15 @@ export default function RitualScreen() {
         );
 
       case "dhikr":
-        const currentDhikr = DHIKR_ITEMS[dhikrIndex];
-        const progress = dhikrCount / totalDhikrCount;
+        if (!selectedDhikr) {
+          return null;
+        }
+
+        const progress = dhikrCount / selectedDhikr.count;
         return (
           <Animated.View entering={FadeIn.duration(400)} style={styles.centered}>
             <Text style={styles.dhikrProgress}>
-              {dhikrCount} / {totalDhikrCount}
+              {dhikrCount} / {selectedDhikr.count}
             </Text>
             <Pressable
               style={styles.dhikrTapArea}
@@ -225,9 +232,9 @@ export default function RitualScreen() {
                 colors={["rgba(107,63,160,0.3)", "rgba(196,162,247,0.1)"]}
                 style={[StyleSheet.absoluteFill, { borderRadius: 120 }]}
               />
-              <Text style={styles.dhikrArabic}>{currentDhikr.arabic}</Text>
-              <Text style={styles.dhikrTranslit}>{currentDhikr.translit}</Text>
-              <Text style={styles.dhikrMeaning}>{currentDhikr.meaning}</Text>
+              <Text style={styles.dhikrArabic}>{selectedDhikr.arabic}</Text>
+              <Text style={styles.dhikrMeaning}>{selectedDhikr.english}</Text>
+              <Text style={styles.dhikrTarget}>Repeat {selectedDhikr.count} times</Text>
               <Text style={styles.tapHint}>Tap to count</Text>
             </Pressable>
             <View style={styles.dhikrProgressBar}>
@@ -237,6 +244,10 @@ export default function RitualScreen() {
         );
 
       case "dua":
+        if (!selectedDua) {
+          return null;
+        }
+
         return (
           <Animated.View entering={FadeIn.duration(400)} style={styles.centered}>
             <Text style={styles.sectionQuestion}>Read slowly.{"\n"}Let it sink in.</Text>
@@ -424,19 +435,20 @@ const styles = StyleSheet.create({
     color: "#f0eaff",
     fontFamily: "Inter_700Bold",
     textAlign: "center",
+    writingDirection: "rtl",
     lineHeight: 40,
   },
-  dhikrTranslit: {
-    fontSize: 14,
-    color: "#C4A2F7",
-    fontFamily: "Inter_400Regular",
-    fontStyle: "italic",
-    textAlign: "center",
-  },
   dhikrMeaning: {
-    fontSize: 12,
+    fontSize: 13,
     color: "#9b80c8",
     fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  dhikrTarget: {
+    fontSize: 12,
+    color: "#C4A2F7",
+    fontFamily: "Inter_600SemiBold",
     textAlign: "center",
   },
   tapHint: {
