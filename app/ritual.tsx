@@ -16,6 +16,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { GradientBackground } from "@/components/GradientBackground";
+import { MascotImage } from "@/components/MascotImage";
+import { mascots } from "@/constants/mascots";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { SliderInput } from "@/components/SliderInput";
 import { BLOCKED_DHIKR, type BlockedDhikr } from "@/constants/blockedDhikr";
@@ -121,7 +123,7 @@ export default function RitualScreen() {
           <Animated.View entering={FadeIn.duration(500)} style={styles.centered}>
             <View style={styles.interceptGlow}>
               <Image
-                source={require("@/assets/mascot/mascot_default.png")}
+                source={mascots.tasbeeh}
                 style={styles.mascot}
                 resizeMode="contain"
               />
@@ -185,11 +187,10 @@ export default function RitualScreen() {
               >
                 <LinearGradient
                   colors={["#2d1a4a", "#3d2460"]}
-                  style={StyleSheet.absoluteFill}
-                  borderRadius={20}
+                  style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
                 />
                 <Image
-                  source={require("@/assets/mascot/mascot_tasbeeh.png")}
+                  source={mascots.tasbeeh}
                   style={styles.chooseIcon}
                   resizeMode="contain"
                 />
@@ -202,8 +203,7 @@ export default function RitualScreen() {
               >
                 <LinearGradient
                   colors={["#2d1a4a", "#3d2460"]}
-                  style={StyleSheet.absoluteFill}
-                  borderRadius={20}
+                  style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
                 />
                 <Ionicons name="book-outline" size={50} color="#F5C842" />
                 <Text style={styles.chooseTitle}>Dua</Text>
@@ -221,6 +221,23 @@ export default function RitualScreen() {
         const progress = dhikrCount / selectedDhikr.count;
         return (
           <Animated.View entering={FadeIn.duration(400)} style={styles.centered}>
+            <View style={styles.dhikrMascotArt}>
+              <View style={styles.dhikrMascotGlow} />
+              <View style={styles.dhikrMascotWarmth} />
+              <View style={styles.dhikrMascotFrame}>
+                <LinearGradient
+                  colors={["rgba(255,255,255,0.14)", "rgba(255,255,255,0.03)"]}
+                  style={styles.dhikrMascotSheen}
+                />
+                <MascotImage
+                  variant="tasbeeh"
+                  size={228}
+                  float
+                  resizeMode="cover"
+                  style={styles.dhikrMascotImage}
+                />
+              </View>
+            </View>
             <Text style={styles.dhikrProgress}>
               {dhikrCount} / {selectedDhikr.count}
             </Text>
@@ -268,12 +285,24 @@ export default function RitualScreen() {
       case "complete":
         return (
           <Animated.View entering={ZoomIn.duration(500)} style={styles.centered}>
-            <View style={styles.completionGlow}>
-              <Image
-                source={require("@/assets/mascot/mascot_celebration.png")}
-                style={styles.mascotLarge}
-                resizeMode="contain"
-              />
+            <View style={styles.completionArt}>
+              <View style={styles.completionGlow} />
+              <View style={styles.completionGlowWarm} />
+              <View style={styles.completionSparkleLeft} />
+              <View style={styles.completionSparkleRight} />
+              <View style={styles.completionFrame}>
+                <LinearGradient
+                  colors={["rgba(255,255,255,0.18)", "rgba(255,255,255,0.04)"]}
+                  style={styles.completionFrameSheen}
+                />
+                <MascotImage
+                  variant="celebrate"
+                  size={248}
+                  float
+                  resizeMode="cover"
+                  style={styles.completionMascot}
+                />
+              </View>
             </View>
             <Text style={styles.completeTitle}>A small return{"\n"}is still a return.</Text>
             <Text style={styles.completeSub}>
@@ -332,10 +361,6 @@ const styles = StyleSheet.create({
   mascot: {
     width: 140,
     height: 140,
-  },
-  mascotLarge: {
-    width: 180,
-    height: 180,
   },
   interceptGlow: {
     shadowColor: "#C4A2F7",
@@ -418,6 +443,57 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#9b80c8",
     fontFamily: "Inter_500Medium",
+  },
+  dhikrMascotArt: {
+    width: 228,
+    height: 228,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  dhikrMascotGlow: {
+    position: "absolute",
+    width: 196,
+    height: 196,
+    borderRadius: 999,
+    backgroundColor: "rgba(164,120,235,0.12)",
+    shadowColor: "#A478EB",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.14,
+    shadowRadius: 22,
+    elevation: 10,
+  },
+  dhikrMascotWarmth: {
+    position: "absolute",
+    width: 154,
+    height: 154,
+    borderRadius: 999,
+    backgroundColor: "rgba(245,200,66,0.08)",
+  },
+  dhikrMascotFrame: {
+    width: 228,
+    height: 228,
+    borderRadius: 999,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#5E3A86",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 16,
+  },
+  dhikrMascotSheen: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 999,
+  },
+  dhikrMascotImage: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#5E3A86",
   },
   dhikrTapArea: {
     width: 240,
@@ -508,12 +584,73 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 18,
   },
+  completionArt: {
+    width: 252,
+    height: 252,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   completionGlow: {
-    shadowColor: "#F5C842",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 40,
+    position: "absolute",
+    width: 220,
+    height: 220,
+    borderRadius: 999,
+    backgroundColor: "rgba(164,120,235,0.18)",
+    shadowColor: "#A478EB",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 28,
+    elevation: 14,
+  },
+  completionGlowWarm: {
+    position: "absolute",
+    width: 168,
+    height: 168,
+    borderRadius: 999,
+    backgroundColor: "rgba(245,200,66,0.12)",
+  },
+  completionFrame: {
+    width: 248,
+    height: 248,
+    borderRadius: 999,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#694094",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.16)",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 26,
+    shadowOffset: { width: 0, height: 12 },
     elevation: 20,
+  },
+  completionFrameSheen: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 999,
+  },
+  completionMascot: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#694094",
+  },
+  completionSparkleLeft: {
+    position: "absolute",
+    top: 34,
+    left: 28,
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: "rgba(245,200,66,0.3)",
+  },
+  completionSparkleRight: {
+    position: "absolute",
+    right: 32,
+    bottom: 42,
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.22)",
   },
   completeTitle: {
     fontSize: 30,

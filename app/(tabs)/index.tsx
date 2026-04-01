@@ -1,6 +1,5 @@
-import React, { useEffect } from "react";
+import React from "react";
 import {
-  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -10,21 +9,13 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, {
-  FadeInDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-  Easing,
-} from "react-native-reanimated";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 
 import { GradientBackground } from "@/components/GradientBackground";
+import { MascotImage } from "@/components/MascotImage";
 import { useApp } from "@/context/AppContext";
-import { useColors } from "@/hooks/useColors";
 
 const DAILY_VERSES = [
   {
@@ -47,37 +38,8 @@ const DAILY_VERSES = [
   },
 ];
 
-function FloatingMascot() {
-  const translateY = useSharedValue(0);
-  useEffect(() => {
-    translateY.value = withRepeat(
-      withSequence(
-        withTiming(-8, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.sin) })
-      ),
-      -1,
-      false
-    );
-  }, []);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  return (
-    <Animated.View style={[style, styles.mascotGlow]}>
-      <Image
-        source={require("@/assets/mascot/mascot_default.png")}
-        style={styles.mascotImg}
-        resizeMode="contain"
-      />
-    </Animated.View>
-  );
-}
-
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const colors = useColors();
   const { state } = useApp();
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
@@ -93,7 +55,7 @@ export default function HomeScreen() {
   const completedToday = todaySessions.length > 0;
 
   return (
-    <GradientBackground style={{ flex: 1 }}>
+    <GradientBackground style={{ flex: 1 }} variant="mid">
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -120,11 +82,36 @@ export default function HomeScreen() {
           </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.duration(500).delay(200)} style={styles.verseCard}>
+        <Animated.View entering={FadeInDown.duration(500).delay(200)} style={styles.heroSection}>
+          <View style={styles.heroContent}>
+            <View style={styles.heroMascotWrap}>
+              <View style={styles.heroGlow} />
+              <View style={styles.heroFrame}>
+                <MascotImage
+                  variant="hero"
+                  size={272}
+                  float
+                  pulse
+                  resizeMode="cover"
+                  style={styles.heroMascot}
+                />
+              </View>
+            </View>
+            {completedToday ? (
+              <View style={styles.completedBanner}>
+                <Ionicons name="checkmark-circle" size={20} color="#C4A2F7" />
+                <Text style={styles.completedText}>Ritual complete for today</Text>
+              </View>
+            ) : (
+              <Text style={styles.mascotCta}>A quiet moment before you begin.</Text>
+            )}
+          </View>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.duration(500).delay(300)} style={styles.verseCard}>
           <LinearGradient
             colors={["rgba(245,200,66,0.08)", "rgba(45,26,74,0.8)"]}
-            style={StyleSheet.absoluteFill}
-            borderRadius={24}
+            style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
           />
           <View style={styles.verseTagRow}>
             <Ionicons name="book-outline" size={14} color="#F5C842" />
@@ -136,18 +123,6 @@ export default function HomeScreen() {
           <Text style={styles.verseRef}>{verse.ref}</Text>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.duration(500).delay(300)} style={styles.mascotSection}>
-          <FloatingMascot />
-          {completedToday ? (
-            <View style={styles.completedBanner}>
-              <Ionicons name="checkmark-circle" size={20} color="#C4A2F7" />
-              <Text style={styles.completedText}>Ritual complete for today</Text>
-            </View>
-          ) : (
-            <Text style={styles.mascotCta}>Ready to begin your ritual?</Text>
-          )}
-        </Animated.View>
-
         <Animated.View entering={FadeInDown.duration(500).delay(400)} style={styles.actionRow}>
           <Pressable
             style={styles.actionCard}
@@ -155,16 +130,13 @@ export default function HomeScreen() {
           >
             <LinearGradient
               colors={["#6B3FA0", "#9B6FE8"]}
-              style={StyleSheet.absoluteFill}
-              borderRadius={20}
+              style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             />
-            <Image
-              source={require("@/assets/mascot/mascot_tasbeeh.png")}
-              style={styles.actionIcon}
-              resizeMode="contain"
-            />
+            <View style={styles.actionIconBadge}>
+              <Ionicons name="sparkles" size={26} color="#F5C842" />
+            </View>
             <Text style={styles.actionLabel}>Start Dhikr</Text>
             <Text style={styles.actionSub}>30 seconds</Text>
           </Pressable>
@@ -174,8 +146,7 @@ export default function HomeScreen() {
           >
             <LinearGradient
               colors={["#2a1050", "#3d2460"]}
-              style={StyleSheet.absoluteFill}
-              borderRadius={20}
+              style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
             />
             <Ionicons name="book-outline" size={40} color="#F5C842" />
             <Text style={styles.actionLabel}>Read a Dua</Text>
@@ -219,13 +190,7 @@ export default function HomeScreen() {
           >
             <LinearGradient
               colors={["rgba(245,200,66,0.08)", "rgba(45,26,74,0.6)"]}
-              style={StyleSheet.absoluteFill}
-              borderRadius={20}
-            />
-            <Image
-              source={require("@/assets/mascot/mascot_celebration.png")}
-              style={styles.streakMascot}
-              resizeMode="contain"
+              style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
             />
             <View style={styles.streakInfo}>
               <Text style={styles.streakTitle}>{state.streak}-day streak</Text>
@@ -322,31 +287,69 @@ const styles = StyleSheet.create({
     color: "#9b80c8",
     fontFamily: "Inter_400Regular",
   },
-  mascotSection: {
+  heroSection: {
     alignItems: "center",
-    gap: 12,
+    marginTop: 10,
+    marginBottom: 10,
   },
-  mascotGlow: {
+  heroContent: {
+    width: "100%",
+    alignItems: "center",
+    gap: 16,
+    paddingTop: 34,
+    paddingBottom: 28,
+  },
+  heroMascotWrap: {
+    width: 272,
+    height: 272,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    marginBottom: 6,
+  },
+  heroGlow: {
+    position: "absolute",
+    width: 248,
+    height: 248,
+    borderRadius: 999,
+    backgroundColor: "rgba(196,162,247,0.18)",
     shadowColor: "#C4A2F7",
+    shadowOpacity: 0.28,
+    shadowRadius: 36,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 15,
   },
-  mascotImg: {
-    width: 120,
-    height: 120,
+  heroFrame: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 999,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#5F2F96",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.16)",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 14 },
+    elevation: 18,
+  },
+  heroMascot: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#5F2F96",
   },
   mascotCta: {
     fontSize: 15,
     color: "rgba(196,162,247,0.8)",
     fontFamily: "Inter_400Regular",
+    textAlign: "center",
   },
   completedBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "rgba(196,162,247,0.1)",
+    backgroundColor: "rgba(196,162,247,0.08)",
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -371,9 +374,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(196,162,247,0.1)",
   },
-  actionIcon: {
+  actionIconBadge: {
     width: 56,
     height: 56,
+    borderRadius: 28,
+    backgroundColor: "rgba(245,200,66,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   actionLabel: {
     fontSize: 16,
@@ -421,10 +428,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 14,
     overflow: "hidden",
-  },
-  streakMascot: {
-    width: 60,
-    height: 60,
   },
   streakInfo: {
     flex: 1,

@@ -1,72 +1,82 @@
-import React from "react";
-import { Image, ImageStyle, StyleSheet, View, ViewStyle } from "react-native";
+import React, { useEffect } from "react";
+import { Image, ImageResizeMode, ImageStyle } from "react-native";
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withSequence,
   withTiming,
-  Easing,
 } from "react-native-reanimated";
-import { useEffect } from "react";
-
-type MascotVariant = "default" | "celebration" | "tasbeeh" | "search" | "onboarding1" | "onboarding2";
+import { mascots, type MascotKey } from "@/constants/mascots";
 
 interface Props {
-  variant?: MascotVariant;
+  variant?: MascotKey;
   size?: number;
-  style?: ViewStyle;
+  style?: ImageStyle;
   float?: boolean;
-  glow?: boolean;
+  pulse?: boolean;
+  resizeMode?: ImageResizeMode;
 }
 
-const mascotSources: Record<MascotVariant, any> = {
-  default: require("@/assets/mascot/mascot_default.png"),
-  celebration: require("@/assets/mascot/mascot_celebration.png"),
-  tasbeeh: require("@/assets/mascot/mascot_tasbeeh.png"),
-  search: require("@/assets/mascot/mascot_search.png"),
-  onboarding1: require("@/assets/mascot/onboarding1.png"),
-  onboarding2: require("@/assets/mascot/onboarding2.png"),
-};
+const AnimatedImage = Animated.createAnimatedComponent(Image);
 
-export function MascotImage({ variant = "default", size = 160, style, float = false, glow = false }: Props) {
+export function MascotImage({
+  variant = "basic",
+  size = 160,
+  style,
+  float = false,
+  pulse = false,
+  resizeMode = "contain",
+}: Props) {
   const translateY = useSharedValue(0);
+  const scale = useSharedValue(1);
 
   useEffect(() => {
     if (float) {
       translateY.value = withRepeat(
         withSequence(
-          withTiming(-10, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0, { duration: 1800, easing: Easing.inOut(Easing.sin) })
+          withTiming(-6, { duration: 1500, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0, { duration: 1500, easing: Easing.inOut(Easing.sin) })
         ),
         -1,
         false
       );
+    } else {
+      translateY.value = 0;
     }
   }, [float]);
 
+  useEffect(() => {
+    if (pulse) {
+      scale.value = withRepeat(
+        withSequence(
+          withTiming(1.02, { duration: 1500, easing: Easing.inOut(Easing.sin) }),
+          withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.sin) })
+        ),
+        -1,
+        false
+      );
+    } else {
+      scale.value = 1;
+    }
+  }, [pulse]);
+
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
+    transform: [{ translateY: translateY.value }, { scale: scale.value }],
   }));
 
+  const imageStyle: ImageStyle = {
+    width: size,
+    height: size,
+    backgroundColor: "transparent",
+  };
+
   return (
-    <View style={[style, glow && styles.glowContainer]}>
-      <Animated.View style={float ? animatedStyle : undefined}>
-        <Image
-          source={mascotSources[variant]}
-          style={{ width: size, height: size, resizeMode: "contain" }}
-        />
-      </Animated.View>
-    </View>
+    <AnimatedImage
+      source={mascots[variant]}
+      style={[imageStyle, style, float || pulse ? animatedStyle : undefined]}
+      resizeMode={resizeMode}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  glowContainer: {
-    shadowColor: "#C4A2F7",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 30,
-    elevation: 20,
-  },
-});

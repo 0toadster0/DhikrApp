@@ -1,7 +1,6 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Dimensions,
-  FlatList,
   Image,
   Platform,
   Pressable,
@@ -9,15 +8,17 @@ import {
   StyleSheet,
   Text,
   View,
-  ViewToken,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
+  Easing,
   FadeIn,
   FadeInDown,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
+  withSequence,
   withTiming,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
@@ -28,6 +29,7 @@ import { GradientBackground } from "@/components/GradientBackground";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { ProgressDots } from "@/components/ProgressDots";
 import { SliderInput } from "@/components/SliderInput";
+import { mascots } from "@/constants/mascots";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -185,11 +187,7 @@ export default function OnboardingScreen() {
       case 2:
         return (
           <CenteredStep>
-            <Image
-              source={require("@/assets/mascot/mascot_default.png")}
-              style={styles.mascotMedium}
-              resizeMode="contain"
-            />
+            <PremiumOnboardingArt />
             <Text style={styles.stepTitle}>Before you open Instagram,{"\n"}pause first.</Text>
             <Text style={styles.stepSub}>
               Dhikr gently intercepts distracting apps{"\n"}and invites you to reconnect — in under 30 seconds.
@@ -240,11 +238,7 @@ export default function OnboardingScreen() {
       case 4:
         return (
           <CenteredStep>
-            <Image
-              source={require("@/assets/mascot/mascot_tasbeeh.png")}
-              style={styles.mascotMedium}
-              resizeMode="contain"
-            />
+            <OnboardingMascot variant="tasbeeh" float />
             <Text style={styles.stepTitle}>Your 30-second{"\n"}check-in.</Text>
             <View style={styles.ritualCards}>
               {[
@@ -366,11 +360,7 @@ export default function OnboardingScreen() {
       case 9:
         return (
           <CenteredStep>
-            <Image
-              source={require("@/assets/mascot/mascot_default.png")}
-              style={styles.mascotMedium}
-              resizeMode="contain"
-            />
+            <OnboardingMascot variant="mag" float />
             <Text style={styles.stepTitle}>Here's how your{"\n"}check-in works.</Text>
             <View style={styles.previewCards}>
               <View style={styles.previewCard}>
@@ -410,11 +400,7 @@ export default function OnboardingScreen() {
       case 11:
         return (
           <CenteredStep>
-            <Image
-              source={require("@/assets/mascot/mascot_celebration.png")}
-              style={styles.mascotMedium}
-              resizeMode="contain"
-            />
+            <Ionicons name="sparkles" size={60} color="#F5C842" />
             <Text style={styles.stepTitle}>Small consistency{"\n"}matters most.</Text>
             <View style={styles.streakPreview}>
               {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
@@ -471,11 +457,7 @@ export default function OnboardingScreen() {
       case 14:
         return (
           <CenteredStep>
-            <Image
-              source={require("@/assets/mascot/mascot_tasbeeh.png")}
-              style={styles.mascotMedium}
-              resizeMode="contain"
-            />
+            <Ionicons name="checkmark-circle-outline" size={60} color="#C4A2F7" />
             <Text style={styles.stepTitle}>You've done the{"\n"}hardest part already.</Text>
             <View style={styles.recapList}>
               {selectedGoals.slice(0, 2).map((g) => {
@@ -505,11 +487,6 @@ export default function OnboardingScreen() {
       case 15:
         return (
           <CenteredStep>
-            <Image
-              source={require("@/assets/mascot/mascot_celebration.png")}
-              style={[styles.mascotMedium, { marginBottom: 8 }]}
-              resizeMode="contain"
-            />
             <Text style={styles.stepTitle}>Start your free trial.</Text>
             <Text style={styles.stepSub}>Everything you need to choose faith first, every day.</Text>
             <View style={[styles.paywallCard, styles.paywallCardBest]}>
@@ -533,11 +510,7 @@ export default function OnboardingScreen() {
       case 16:
         return (
           <CenteredStep>
-            <Image
-              source={require("@/assets/mascot/onboarding2.png")}
-              style={[styles.mascotLarge, { marginTop: 0 }]}
-              resizeMode="contain"
-            />
+            <Ionicons name="moon" size={62} color="#F5C842" />
             <Text style={styles.stepTitle}>You're ready.</Text>
             <Text style={styles.stepSub}>
               Even 30 seconds of remembrance can change the direction of your day.{"\n\n"}
@@ -606,6 +579,90 @@ function CenteredStep({ children }: { children: React.ReactNode }) {
     <Animated.View entering={FadeIn.duration(400)} style={styles.centeredStep}>
       {children}
     </Animated.View>
+  );
+}
+
+function PremiumOnboardingArt() {
+  return <OnboardingMascot variant="hero" size="large" />;
+}
+
+function OnboardingMascot({
+  variant,
+  float = false,
+  size = "medium",
+}: {
+  variant: "hero" | "tasbeeh" | "mag";
+  float?: boolean;
+  size?: "medium" | "large";
+}) {
+  const floatY = useSharedValue(0);
+  const glowScale = useSharedValue(1);
+  const glowOpacity = useSharedValue(0.6);
+
+  useEffect(() => {
+    floatY.value = withRepeat(
+      withSequence(
+        withTiming(-8, { duration: 2600, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 2600, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
+    );
+
+    glowScale.value = withRepeat(
+      withSequence(
+        withTiming(1.05, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
+    );
+
+    glowOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0.8, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.56, { duration: 2200, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
+    );
+  }, [floatY, glowOpacity, glowScale]);
+
+  const floatStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: float ? floatY.value : 0 }],
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+    transform: [{ scale: glowScale.value }],
+  }));
+
+  const stageStyle = size === "large" ? styles.artStage : styles.mascotStage;
+  const glowBaseStyle = size === "large" ? styles.artGlow : styles.mascotGlow;
+  const surfaceStyle = size === "large" ? styles.artSurface : styles.mascotSurface;
+  const imageStyle =
+    variant === "hero"
+      ? size === "large"
+        ? styles.heroMascotLarge
+        : styles.heroMascotMedium
+      : size === "large"
+        ? styles.framedMascotLarge
+        : styles.framedMascotMedium;
+
+  return (
+    <View style={stageStyle}>
+      <Animated.View pointerEvents="none" style={[glowBaseStyle, glowStyle]} />
+      <Animated.View style={[styles.artFloatLayer, floatStyle]}>
+        <LinearGradient
+          colors={["rgba(255,255,255,0.08)", "rgba(196,162,247,0.03)"]}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
+          style={surfaceStyle}
+        >
+          <Image source={mascots[variant]} style={imageStyle} resizeMode="cover" />
+        </LinearGradient>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -691,6 +748,100 @@ const styles = StyleSheet.create({
   mascotMedium: {
     width: 140,
     height: 140,
+  },
+  mascotStage: {
+    width: 178,
+    height: 178,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+  },
+  artStage: {
+    width: 250,
+    height: 250,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+  },
+  artFloatLayer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  artGlow: {
+    position: "absolute",
+    width: 214,
+    height: 214,
+    borderRadius: 107,
+    backgroundColor: "rgba(196,162,247,0.2)",
+    shadowColor: "#F3D792",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.22,
+    shadowRadius: 34,
+    elevation: 0,
+  },
+  mascotGlow: {
+    position: "absolute",
+    width: 152,
+    height: 152,
+    borderRadius: 76,
+    backgroundColor: "rgba(196,162,247,0.18)",
+    shadowColor: "#F3D792",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    elevation: 0,
+  },
+  artSurface: {
+    width: 236,
+    height: 236,
+    borderRadius: 118,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(32,14,54,0.18)",
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 22,
+    elevation: 0,
+  },
+  mascotSurface: {
+    width: 168,
+    height: 168,
+    borderRadius: 84,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(32,14,54,0.18)",
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 22,
+    elevation: 0,
+  },
+  artMascot: {
+    width: "100%",
+    height: "100%",
+  },
+  heroMascotLarge: {
+    width: "116%",
+    height: "116%",
+  },
+  heroMascotMedium: {
+    width: "114%",
+    height: "114%",
+  },
+  framedMascotLarge: {
+    width: "108%",
+    height: "108%",
+  },
+  framedMascotMedium: {
+    width: "110%",
+    height: "110%",
   },
   mascotLarge: {
     width: 240,
