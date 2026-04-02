@@ -4,12 +4,12 @@ import {
   Image,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
@@ -62,17 +62,6 @@ const GOALS = [
   { id: "grateful", label: "Practice more gratitude" },
 ];
 
-const SOCIAL_APPS = [
-  { id: "instagram", label: "Instagram", icon: "logo-instagram" as const },
-  { id: "tiktok", label: "TikTok", icon: "musical-notes" as const },
-  { id: "twitter", label: "X / Twitter", icon: "logo-twitter" as const },
-  { id: "youtube", label: "YouTube", icon: "logo-youtube" as const },
-  { id: "reddit", label: "Reddit", icon: "logo-reddit" as const },
-  { id: "snapchat", label: "Snapchat", icon: "camera" as const },
-  { id: "facebook", label: "Facebook", icon: "logo-facebook" as const },
-  { id: "whatsapp", label: "WhatsApp", icon: "chatbubble-ellipses" as const },
-];
-
 const STRUGGLE_TIMES = [
   { id: "morning", label: "Morning", sub: "Right after waking up" },
   { id: "afternoon", label: "After school / work" },
@@ -106,6 +95,9 @@ export default function OnboardingScreen() {
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
   const [mood, setMood] = useState(5);
   const [closeness, setCloseness] = useState(5);
+  const [dailyPhoneHours, setDailyPhoneHours] = useState(4);
+  /** While dragging the phone-hours slider, disable vertical scroll to avoid gesture conflict. */
+  const [phoneHoursScrollLock, setPhoneHoursScrollLock] = useState(false);
   const [journeyGridSize, setJourneyGridSize] = useState({ width: 0, height: 0 });
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
@@ -148,6 +140,18 @@ export default function OnboardingScreen() {
     setUserNameInput(saved);
   }, [isLoading, step, state.profile.name]);
 
+  useEffect(() => {
+    if (isLoading) return;
+    const saved = state.profile.dailyPhoneHours;
+    if (typeof saved === "number" && saved >= 1 && saved <= 10) {
+      setDailyPhoneHours(saved);
+    }
+  }, [isLoading]);
+
+  useEffect(() => {
+    if (step !== 4) setPhoneHoursScrollLock(false);
+  }, [step]);
+
   /** Image steps 0–1: intro line ~10% from top (9–11% band), respecting notch */
   const imageSlideIntroTop = Math.max(insets.top + 6, SCREEN_H * 0.105);
   /** 24px side padding, cap width ~84% so lines do not stretch edge-to-edge */
@@ -160,13 +164,16 @@ export default function OnboardingScreen() {
       if (!trimmed) return;
       updateProfile({ name: trimmed });
     }
+    if (step === 4) {
+      updateProfile({ dailyPhoneHours });
+    }
     if (step < TOTAL_STEPS - 1) {
       setStep((s) => s + 1);
       setOnboardingStep(step + 1);
     } else {
       finishOnboarding();
     }
-  }, [step, userNameInput, updateProfile, setOnboardingStep]);
+  }, [step, userNameInput, dailyPhoneHours, updateProfile, setOnboardingStep]);
 
   const goBack = useCallback(() => {
     if (step > 0) {
@@ -179,6 +186,7 @@ export default function OnboardingScreen() {
       goals: selectedGoals,
       appsToBlock: selectedApps,
       struggleTimes: selectedTimes,
+      dailyPhoneHours,
       moodBaseline: mood,
       closenessBaseline: closeness,
       onboardingComplete: true,
@@ -190,13 +198,6 @@ export default function OnboardingScreen() {
     Haptics.selectionAsync();
     setSelectedGoals((prev) =>
       prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]
-    );
-  };
-
-  const toggleApp = (id: string) => {
-    Haptics.selectionAsync();
-    setSelectedApps((prev) =>
-      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
     );
   };
 
@@ -374,35 +375,30 @@ export default function OnboardingScreen() {
 
       case 4:
         return (
-          <CenteredStep>
-            <Text style={[styles.stepTitle, { marginTop: 0 }]}>Choose what to{"\n"}protect your time from.</Text>
-            <Text style={styles.stepSub}>These apps will ask for a short pause before opening.</Text>
-            <View style={styles.appGrid}>
-              {SOCIAL_APPS.map((app) => {
-                const selected = selectedApps.includes(app.id);
-                return (
-                  <Pressable
-                    key={app.id}
-                    style={[
-                      styles.appCard,
-                      selected && styles.appCardSelected,
-                      { borderColor: selected ? colors.primary : colors.border },
-                    ]}
-                    onPress={() => toggleApp(app.id)}
-                  >
-                    <Ionicons
-                      name={app.icon}
-                      size={22}
-                      color={selected ? colors.primary : colors.mutedForeground}
-                    />
-                    <Text style={[styles.appLabel, { color: selected ? colors.foreground : colors.mutedForeground }]}>
-                      {app.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+          <Animated.View entering={FadeIn.duration(400)} style={styles.phoneHoursScreen}>
+            <Text style={[styles.stepTitle, styles.phoneHoursHeading]}>
+              Be honest, how long do you spend on your phone daily?
+            </Text>
+            <View style={styles.phoneHoursMiddle}>
+              <View style={styles.phoneHoursStep}>
+                <View style={styles.phoneHoursValueBlock}>
+                  <Text style={styles.phoneHoursBigNum}>{dailyPhoneHours}</Text>
+                  <Text style={styles.phoneHoursUnit}>
+                    {dailyPhoneHours === 1 ? "hour/day" : "hours/day"}
+                  </Text>
+                </View>
+                <SliderInput
+                  value={dailyPhoneHours}
+                  onChange={setDailyPhoneHours}
+                  min={1}
+                  max={10}
+                  omitValueDisplay
+                  trackEndLabels={{ left: "1h", right: "10h" }}
+                  onDragActiveChange={setPhoneHoursScrollLock}
+                />
+              </View>
             </View>
-          </CenteredStep>
+          </Animated.View>
         );
 
       case 5:
@@ -723,6 +719,7 @@ export default function OnboardingScreen() {
         )}
 
         <ScrollView
+          scrollEnabled={!phoneHoursScrollLock}
           contentContainerStyle={[
             styles.scrollContent,
             isImageStep && styles.scrollContentFull,
@@ -766,7 +763,7 @@ export default function OnboardingScreen() {
           </Pressable>
         )}
 
-        {isImageStep && step !== 2 && (
+        {isImageStep && (
           <View
             style={[
               styles.imageBottomProgress,
@@ -1283,6 +1280,50 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     paddingHorizontal: 4,
     maxWidth: 310,
+  },
+  phoneHoursScreen: {
+    flex: 1,
+    width: "100%",
+    alignSelf: "stretch",
+    paddingHorizontal: 4,
+    paddingTop: 50,
+  },
+  phoneHoursHeading: {
+    marginTop: 0,
+    marginBottom: 8,
+    maxWidth: 340,
+    alignSelf: "center",
+    width: "100%",
+  },
+  phoneHoursMiddle: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+    minHeight: 0,
+  },
+  phoneHoursStep: {
+    width: "100%",
+    maxWidth: 340,
+    alignItems: "center",
+    gap: 32,
+  },
+  phoneHoursValueBlock: {
+    alignItems: "center",
+    gap: 4,
+    transform: [{ translateY: -40 }],
+  },
+  phoneHoursBigNum: {
+    fontSize: 72,
+    fontFamily: "Inter_700Bold",
+    color: "#f0eaff",
+    lineHeight: 76,
+    letterSpacing: -2,
+  },
+  phoneHoursUnit: {
+    fontSize: 17,
+    fontFamily: "Inter_500Medium",
+    color: "#f0eaff",
   },
   pillRow: {
     flexDirection: "row",

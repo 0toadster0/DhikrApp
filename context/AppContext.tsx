@@ -6,6 +6,8 @@ export interface UserProfile {
   goals: string[];
   appsToBlock: string[];
   struggleTimes: string[];
+  /** Daily phone use (hours), 1–10 from onboarding — used for in-app estimates. */
+  dailyPhoneHours: number;
   moodBaseline: number;
   closenessBaseline: number;
   onboardingComplete: boolean;
@@ -45,6 +47,7 @@ const defaultProfile: UserProfile = {
   goals: [],
   appsToBlock: [],
   struggleTimes: [],
+  dailyPhoneHours: 4,
   moodBaseline: 5,
   closenessBaseline: 5,
   onboardingComplete: false,
@@ -85,7 +88,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       let merged: AppState = defaultState;
       if (stored) {
         const parsed = JSON.parse(stored);
-        merged = { ...defaultState, ...parsed };
+        merged = {
+          ...defaultState,
+          ...parsed,
+          profile: { ...defaultProfile, ...(parsed.profile ?? {}) },
+        };
       }
 
       if (standaloneName && !merged.profile.name?.trim()) {

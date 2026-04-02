@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -16,55 +16,151 @@ interface Props {
   min?: number;
   max?: number;
   label?: string;
+  /** When true, only the track + thumb are shown (parent supplies the main value display). */
+  omitValueDisplay?: boolean;
+  trackEndLabels?: { left: string; right: string };
+  /** Called when the user starts/ends dragging — use to disable a parent ScrollView. */
+  onDragActiveChange?: (active: boolean) => void;
 }
 
 const TRACK_WIDTH = 280;
 const THUMB_SIZE = 32;
 
-export function SliderInput({ value, onChange, min = 1, max = 10, label }: Props) {
+function clampNum(v: number, lo: number, hi: number) {
+  if (!Number.isFinite(v)) return lo;
+  return Math.min(Math.max(v, lo), hi);
+}
+
+export function SliderInput({
+  value,
+  onChange,
+  min = 1,
+  max = 10,
+  label,
+  omitValueDisplay = false,
+  trackEndLabels,
+  onDragActiveChange,
+}: Props) {
   const colors = useColors();
-  const fraction = (value - min) / (max - min);
-  const thumbX = useSharedValue(fraction * (TRACK_WIDTH - THUMB_SIZE));
+  const { lo, hi, span } = useMemo(() => {
+    const a = Number.isFinite(min) ? min : 1;
+    const b = Number.isFinite(max) ? max : 10;
+    const lo = Math.min(a, b);
+    const hi = Math.max(a, b);
+    const range = hi - lo;
+    return { lo, hi, span: range > 0 ? range : 1 };
+  }, [min, max]);
+
+  const trackSpan = Math.max(0, TRACK_WIDTH - THUMB_SIZE);
+  const lastEmitted = useRef(clampNum(value, lo, hi));
+
+  const loSV = useSharedValue(lo);
+  const hiSV = useSharedValue(hi);
+  const rangeSV = useSharedValue(span);
+  const trackSpanSV = useSharedValue(trackSpan);
+  const lastEmittedSV = useSharedValue(clampNum(value, lo, hi));
+
+  useEffect(() => {
+    loSV.value = lo;
+    hiSV.value = hi;
+    rangeSV.value = span;
+    trackSpanSV.value = trackSpan;
+  }, [lo, hi, span, trackSpan]);
+
+  useEffect(() => {
+    const v = clampNum(value, lo, hi);
+    lastEmitted.current = v;
+    lastEmittedSV.value = v;
+  }, [value, lo, hi]);
+
+  const fraction = span > 0 ? (clampNum(value, lo, hi) - lo) / span : 0;
+  const thumbX = useSharedValue(fraction * trackSpan);
   const startX = useSharedValue(0);
 
-  const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
+  useEffect(() => {
+    if (trackSpan <= 0) return;
+    const v = clampNum(value, lo, hi);
+    const f = span > 0 ? (v - lo) / span : 0;
+    const safeF = Number.isFinite(f) ? clampNum(f, 0, 1) : 0;
+    thumbX.value = safeF * trackSpan;
+  }, [value, lo, hi, span, trackSpan]);
 
-  const updateValue = useCallback((x: number) => {
-    const clamped = clamp(x, 0, TRACK_WIDTH - THUMB_SIZE);
-    const frac = clamped / (TRACK_WIDTH - THUMB_SIZE);
-    const newVal = Math.round(min + frac * (max - min));
-    onChange(newVal);
-  }, [min, max, onChange]);
+  const setDragActive = useCallback(
+    (active: boolean) => {
+      onDragActiveChange?.(active);
+    },
+    [onDragActiveChange]
+  );
+
+  /** runOnJS path only when stepped value changes (worklet compares first). */
+  const emitStepped = useCallback(
+    (v: number) => {
+      lastEmitted.current = v;
+      onChange(v);
+    },
+    [onChange]
+  );
 
   const gesture = Gesture.Pan()
+    // Prefer horizontal drags so a parent vertical ScrollView does not steal the slider.
+    .activeOffsetX([-12, 12])
+    .failOffsetY([-14, 14])
     .onBegin(() => {
       startX.value = thumbX.value;
+      runOnJS(setDragActive)(true);
     })
     .onUpdate((e) => {
-      const newX = clamp(startX.value + e.translationX, 0, TRACK_WIDTH - THUMB_SIZE);
-      thumbX.value = newX;
-      runOnJS(updateValue)(newX);
+      const ts = trackSpanSV.value;
+      if (ts <= 0) return;
+      let tx = startX.value + e.translationX;
+      if (tx < 0) tx = 0;
+      else if (tx > ts) tx = ts;
+      thumbX.value = tx;
+      const frac = tx / ts;
+      const raw = loSV.value + frac * rangeSV.value;
+      const rounded = Math.round(raw);
+      const loW = loSV.value;
+      const hiW = hiSV.value;
+      const stepped = rounded < loW ? loW : rounded > hiW ? hiW : rounded;
+      if (stepped !== lastEmittedSV.value) {
+        lastEmittedSV.value = stepped;
+        runOnJS(emitStepped)(stepped);
+      }
     })
     .onEnd(() => {
       thumbX.value = withSpring(thumbX.value, { damping: 20 });
+    })
+    .onFinalize(() => {
+      runOnJS(setDragActive)(false);
     });
 
-  const thumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: thumbX.value }],
-  }));
+  const thumbStyle = useAnimatedStyle(() => {
+    const span = TRACK_WIDTH - THUMB_SIZE;
+    let x = thumbX.value;
+    if (typeof x !== "number" || !Number.isFinite(x)) x = 0;
+    const tx = x <= 0 ? 0 : x >= span ? span : x;
+    return { transform: [{ translateX: tx }] };
+  });
 
-  const fillWidth = useAnimatedStyle(() => ({
-    width: thumbX.value + THUMB_SIZE / 2,
-  }));
+  const fillWidth = useAnimatedStyle(() => {
+    let x = thumbX.value;
+    if (typeof x !== "number" || !Number.isFinite(x)) x = 0;
+    let w = x + THUMB_SIZE / 2;
+    if (!Number.isFinite(w)) w = 0;
+    const width = w <= 0 ? 0 : w >= TRACK_WIDTH ? TRACK_WIDTH : w;
+    return { width };
+  });
 
   return (
     <View style={styles.container}>
       {label && <Text style={[styles.label, { color: colors.mutedForeground }]}>{label}</Text>}
-      <View style={styles.valueRow}>
-        <Text style={[styles.minLabel, { color: colors.mutedForeground }]}>{min}</Text>
-        <Text style={[styles.currentValue, { color: colors.foreground }]}>{value}</Text>
-        <Text style={[styles.maxLabel, { color: colors.mutedForeground }]}>{max}</Text>
-      </View>
+      {!omitValueDisplay && (
+        <View style={styles.valueRow}>
+          <Text style={[styles.minLabel, { color: colors.mutedForeground }]}>{lo}</Text>
+          <Text style={[styles.currentValue, { color: colors.foreground }]}>{clampNum(value, lo, hi)}</Text>
+          <Text style={[styles.maxLabel, { color: colors.mutedForeground }]}>{hi}</Text>
+        </View>
+      )}
       <View style={[styles.track, { width: TRACK_WIDTH, backgroundColor: "rgba(196,162,247,0.15)" }]}>
         <Animated.View style={[styles.fill, fillWidth]}>
           <LinearGradient
@@ -78,6 +174,12 @@ export function SliderInput({ value, onChange, min = 1, max = 10, label }: Props
           <Animated.View style={[styles.thumb, thumbStyle, { backgroundColor: colors.primary }]} />
         </GestureDetector>
       </View>
+      {trackEndLabels && (
+        <View style={styles.trackEndRow}>
+          <Text style={[styles.trackEndLabel, { color: colors.mutedForeground }]}>{trackEndLabels.left}</Text>
+          <Text style={[styles.trackEndLabel, { color: colors.mutedForeground }]}>{trackEndLabels.right}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -108,6 +210,16 @@ const styles = StyleSheet.create({
   },
   maxLabel: {
     fontSize: 14,
+    fontFamily: "Inter_400Regular",
+  },
+  trackEndRow: {
+    flexDirection: "row",
+    width: TRACK_WIDTH,
+    justifyContent: "space-between",
+    paddingHorizontal: 2,
+  },
+  trackEndLabel: {
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
   },
   track: {
