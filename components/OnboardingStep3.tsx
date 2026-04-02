@@ -38,7 +38,7 @@ const APPS: Array<{ id: LockAppId; label: string; source: unknown }> = [
 export function OnboardingStep3({
   onContinue,
   progressCurrent = 2,
-  progressTotal = 17,
+  progressTotal = 18,
 }: Props) {
   const pulse = useSharedValue(0);
   const progressValue = Math.max(0, Math.min(1, (progressCurrent + 1) / progressTotal));

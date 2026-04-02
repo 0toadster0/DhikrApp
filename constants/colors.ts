@@ -21,6 +21,9 @@ const colors = {
     accent: "#F5C842",
     accentForeground: "#1a0a2e",
 
+    /** Lavender highlight on dark hero/onboarding text (slides 1–2, reflection step, etc.) */
+    introEmphasis: "#D7C0FF",
+
     destructive: "#ef4444",
     destructiveForeground: "#ffffff",
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Dimensions,
   Image,
@@ -70,7 +70,7 @@ const STRUGGLE_TIMES = [
   { id: "bored", label: "When bored", sub: "Any time" },
 ];
 
-const TOTAL_STEPS = 17;
+const TOTAL_STEPS = 18;
 const USER_NAME_MAX_LENGTH = 25;
 const JOURNEY_BOARD_DAYS = 60;
 const JOURNEY_COMPLETED_DAYS = 34;
@@ -82,6 +82,196 @@ const JOURNEY_GRID_SIDE_PADDING = 12;
 const JOURNEY_GRID_VERTICAL_PADDING = 4;
 const JOURNEY_GRID_GAP = 3;
 const JOURNEY_CELL_OPACITY_RHYTHM = [0.74, 0.7, 0.78, 0.72, 0.76, 0.68];
+
+/** Fixed reading-time estimate for the reflection comparison only (hours). */
+const SCREEN_TIME_REFLECT_QURAN_HOURS = 40;
+/** Lifetime window baked into the simplified formula (years). */
+const SCREEN_TIME_REFLECT_LIFETIME_YEARS = 60;
+
+function formatIntegerWithCommas(n: number): string {
+  return Math.round(n).toLocaleString("en-US");
+}
+
+function computeScreenTimeReflection(dailyPhoneHours: number) {
+  const hoursPerYear = Math.round(dailyPhoneHours * 365);
+  const daysPerYear = Math.round(hoursPerYear / 24);
+  const lifetimeYearsRaw = (dailyPhoneHours * SCREEN_TIME_REFLECT_LIFETIME_YEARS) / 24;
+  const lifetimeRounded = Math.round(lifetimeYearsRaw * 10) / 10;
+  const lifetimeDisplay = Number.isInteger(lifetimeRounded)
+    ? String(lifetimeRounded)
+    : lifetimeRounded.toFixed(1);
+  const quranDays = Math.max(1, Math.round(SCREEN_TIME_REFLECT_QURAN_HOURS / dailyPhoneHours));
+  const lifetimeIsWhole = Number.isInteger(lifetimeRounded);
+  return {
+    hoursPerYear,
+    daysPerYear,
+    lifetimeDisplay,
+    lifetimeRounded,
+    lifetimeIsWhole,
+    quranDays,
+  };
+}
+
+const SCREEN_TIME_REFLECT_COUNT_STAGGER_MS = 260;
+const SCREEN_TIME_REFLECT_COUNT_DURATION_MS = 360;
+
+function easeOutCubic(t: number): number {
+  return 1 - (1 - t) ** 3;
+}
+
+type ScreenTimeReflectStepProps = {
+  trimmedName: string;
+  hasName: boolean;
+  hoursPerYear: number;
+  daysPerYear: number;
+  lifetimeDisplay: string;
+  lifetimeRounded: number;
+  lifetimeIsWhole: boolean;
+  quranDays: number;
+  introEmphasis: string;
+  foreground: string;
+};
+
+function ScreenTimeReflectStep({
+  trimmedName,
+  hasName,
+  hoursPerYear,
+  daysPerYear,
+  lifetimeDisplay,
+  lifetimeRounded,
+  lifetimeIsWhole,
+  quranDays,
+  introEmphasis,
+  foreground,
+}: ScreenTimeReflectStepProps) {
+  const accentStyle = [styles.screenTimeReflectAccent, { color: introEmphasis }];
+  const bodyStyle = [styles.screenTimeReflectBody, { color: foreground }];
+
+  const finals = useMemo(
+    () => ({
+      h: formatIntegerWithCommas(hoursPerYear),
+      d: formatIntegerWithCommas(daysPerYear),
+      l: lifetimeDisplay,
+      q: formatIntegerWithCommas(quranDays),
+    }),
+    [hoursPerYear, daysPerYear, lifetimeDisplay, quranDays]
+  );
+
+  const [shown, setShown] = useState(() => ({
+    h: formatIntegerWithCommas(0),
+    d: formatIntegerWithCommas(0),
+    l: "0",
+    q: formatIntegerWithCommas(0),
+  }));
+
+  useEffect(() => {
+    let cancelled = false;
+    let rafId = 0;
+    const t0 = performance.now();
+    const endMs = 3 * SCREEN_TIME_REFLECT_COUNT_STAGGER_MS + SCREEN_TIME_REFLECT_COUNT_DURATION_MS;
+
+    const segProgress = (elapsed: number, delay: number) => {
+      const raw = (elapsed - delay) / SCREEN_TIME_REFLECT_COUNT_DURATION_MS;
+      if (raw <= 0) return 0;
+      if (raw >= 1) return 1;
+      return easeOutCubic(raw);
+    };
+
+    const tick = (now: number) => {
+      if (cancelled) return;
+      const elapsed = now - t0;
+
+      if (elapsed >= endMs) {
+        setShown(finals);
+        return;
+      }
+
+      const s0 = 0;
+      const s1 = SCREEN_TIME_REFLECT_COUNT_STAGGER_MS;
+      const s2 = 2 * SCREEN_TIME_REFLECT_COUNT_STAGGER_MS;
+      const s3 = 3 * SCREEN_TIME_REFLECT_COUNT_STAGGER_MS;
+
+      const ph = segProgress(elapsed, s0);
+      const pd = segProgress(elapsed, s1);
+      const pl = segProgress(elapsed, s2);
+      const pq = segProgress(elapsed, s3);
+
+      const h = formatIntegerWithCommas(Math.round(hoursPerYear * ph));
+      const d = formatIntegerWithCommas(Math.round(daysPerYear * pd));
+      const lVal = lifetimeRounded * pl;
+      const l = lifetimeIsWhole
+        ? String(Math.round(lVal))
+        : (() => {
+            const x = Math.round(lVal * 10) / 10;
+            return Number.isInteger(x) ? String(x) : x.toFixed(1);
+          })();
+      const q = formatIntegerWithCommas(Math.round(quranDays * pq));
+
+      setShown({ h, d, l, q });
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(rafId);
+    };
+  }, [finals, hoursPerYear, daysPerYear, lifetimeRounded, lifetimeIsWhole, quranDays]);
+
+  return (
+    <>
+      <View style={styles.screenTimeReflectBlock}>
+        <Text style={styles.screenTimeReflectParagraph}>
+          {hasName ? (
+            <>
+              <Text style={bodyStyle}>
+                {trimmedName}, you{"\u2019"}ll spend{" "}
+              </Text>
+              <Text style={accentStyle}>{shown.h}</Text>
+              <Text style={bodyStyle}> hours on your phone this year</Text>
+            </>
+          ) : (
+            <>
+              <Text style={bodyStyle}>You{"\u2019"}ll spend </Text>
+              <Text style={accentStyle}>{shown.h}</Text>
+              <Text style={bodyStyle}> hours on your phone this year</Text>
+            </>
+          )}
+        </Text>
+      </View>
+      <View style={styles.screenTimeReflectBlock}>
+        <Text style={styles.screenTimeReflectParagraph}>
+          <Text style={bodyStyle}>That{"\u2019"}s over </Text>
+          <Text style={accentStyle}>{shown.d}</Text>
+          <Text style={bodyStyle}> days this year alone</Text>
+        </Text>
+      </View>
+      <View style={styles.screenTimeReflectBlock}>
+        <Text style={styles.screenTimeReflectParagraph}>
+          <Text style={bodyStyle}>Or </Text>
+          <Text style={accentStyle}>{shown.l}</Text>
+          <Text style={bodyStyle}> years over your lifetime...</Text>
+        </Text>
+      </View>
+      <View style={styles.screenTimeReflectBlock}>
+        <Text style={styles.screenTimeReflectParagraph}>
+          <Text style={bodyStyle}>You could read the entire </Text>
+          <Text style={accentStyle}>Qur{"\u2019"}an</Text>
+          <Text style={bodyStyle}> in </Text>
+          <Text style={accentStyle}>{shown.q}</Text>
+          <Text style={bodyStyle}> days</Text>
+        </Text>
+      </View>
+      <View style={styles.screenTimeReflectBlock}>
+        <Text style={styles.screenTimeReflectParagraph}>
+          <Text style={bodyStyle}>If you traded some </Text>
+          <Text style={accentStyle}>screen time</Text>
+          <Text style={bodyStyle}> for time with Allah</Text>
+        </Text>
+      </View>
+    </>
+  );
+}
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -99,6 +289,7 @@ export default function OnboardingScreen() {
   /** While dragging the phone-hours slider, disable vertical scroll to avoid gesture conflict. */
   const [phoneHoursScrollLock, setPhoneHoursScrollLock] = useState(false);
   const [journeyGridSize, setJourneyGridSize] = useState({ width: 0, height: 0 });
+  const [reflectAnimSession, setReflectAnimSession] = useState(0);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
@@ -166,6 +357,7 @@ export default function OnboardingScreen() {
     }
     if (step === 4) {
       updateProfile({ dailyPhoneHours });
+      setReflectAnimSession((s) => s + 1);
     }
     if (step < TOTAL_STEPS - 1) {
       setStep((s) => s + 1);
@@ -229,7 +421,8 @@ export default function OnboardingScreen() {
               style={[styles.imageSlideIntroWrap, { top: imageSlideIntroTop }]}
             >
               <Text style={[styles.imageSlideIntroText, { maxWidth: imageSlideTextMaxW }]}>
-                Social media addiction is taking you away from <Text style={styles.imageSlideIntroEmphasis}>Allah</Text>.
+                Social media addiction is taking you away from{" "}
+                <Text style={{ color: colors.introEmphasis }}>Allah</Text>.
               </Text>
             </Animated.View>
           </View>
@@ -254,7 +447,7 @@ export default function OnboardingScreen() {
               style={[styles.imageSlideIntroWrap, { top: imageSlideIntroTop }]}
             >
               <Text style={[styles.imageSlideIntroText, { maxWidth: imageSlideTextMaxW }]}>
-                <Text style={styles.imageSlideIntroEmphasis}>Dhikr App</Text> can help you choose your faith first daily.
+                <Text style={{ color: colors.introEmphasis }}>Dhikr App</Text> can help you choose your faith first daily.
               </Text>
             </Animated.View>
           </View>
@@ -401,7 +594,38 @@ export default function OnboardingScreen() {
           </Animated.View>
         );
 
-      case 5:
+      case 5: {
+        const trimmedName = (state.profile.name?.trim() || userNameInput.trim()) || "";
+        const hasName = trimmedName.length > 0;
+        const {
+          hoursPerYear,
+          daysPerYear,
+          lifetimeDisplay,
+          lifetimeRounded,
+          lifetimeIsWhole,
+          quranDays,
+        } = computeScreenTimeReflection(dailyPhoneHours);
+
+        return (
+          <Animated.View entering={FadeIn.duration(400)} style={styles.screenTimeReflect}>
+            <ScreenTimeReflectStep
+              key={reflectAnimSession}
+              trimmedName={trimmedName}
+              hasName={hasName}
+              hoursPerYear={hoursPerYear}
+              daysPerYear={daysPerYear}
+              lifetimeDisplay={lifetimeDisplay}
+              lifetimeRounded={lifetimeRounded}
+              lifetimeIsWhole={lifetimeIsWhole}
+              quranDays={quranDays}
+              introEmphasis={colors.introEmphasis}
+              foreground={colors.foreground}
+            />
+          </Animated.View>
+        );
+      }
+
+      case 6:
         return (
           <CenteredStep>
             <Text style={styles.stepTitle}>What are you{"\n"}hoping to change?</Text>
@@ -432,7 +656,7 @@ export default function OnboardingScreen() {
           </CenteredStep>
         );
 
-      case 6:
+      case 7:
         return (
           <CenteredStep>
             <Text style={styles.stepTitle}>When do you{"\n"}struggle most?</Text>
@@ -468,7 +692,7 @@ export default function OnboardingScreen() {
           </CenteredStep>
         );
 
-      case 7:
+      case 8:
         return (
           <CenteredStep>
             <Text style={styles.stepTitle}>How have you been{"\n"}feeling lately?</Text>
@@ -483,7 +707,7 @@ export default function OnboardingScreen() {
           </CenteredStep>
         );
 
-      case 8:
+      case 9:
         return (
           <CenteredStep>
             <Text style={styles.stepTitle}>How close to Allah{"\n"}do you feel lately?</Text>
@@ -498,7 +722,7 @@ export default function OnboardingScreen() {
           </CenteredStep>
         );
 
-      case 9:
+      case 10:
         return (
           <CenteredStep>
             <OnboardingMascot variant="mag" float />
@@ -523,7 +747,7 @@ export default function OnboardingScreen() {
           </CenteredStep>
         );
 
-      case 10:
+      case 11:
         return (
           <CenteredStep>
             <Ionicons name="book-outline" size={60} color="#C4A2F7" />
@@ -538,7 +762,7 @@ export default function OnboardingScreen() {
           </CenteredStep>
         );
 
-      case 11:
+      case 12:
         return (
           <CenteredStep>
             <Ionicons name="sparkles" size={60} color="#F5C842" />
@@ -557,7 +781,7 @@ export default function OnboardingScreen() {
           </CenteredStep>
         );
 
-      case 12:
+      case 13:
         return (
           <CenteredStep>
             <Ionicons name="notifications-outline" size={60} color="#C4A2F7" />
@@ -578,7 +802,7 @@ export default function OnboardingScreen() {
           </CenteredStep>
         );
 
-      case 13:
+      case 14:
         return (
           <CenteredStep>
             <Ionicons name="shield-checkmark-outline" size={60} color="#C4A2F7" />
@@ -595,7 +819,7 @@ export default function OnboardingScreen() {
           </CenteredStep>
         );
 
-      case 14:
+      case 15:
         return (
           <CenteredStep>
             <Ionicons name="checkmark-circle-outline" size={60} color="#C4A2F7" />
@@ -625,7 +849,7 @@ export default function OnboardingScreen() {
           </CenteredStep>
         );
 
-      case 15:
+      case 16:
         return (
           <CenteredStep>
             <Text style={styles.stepTitle}>Start your free trial.</Text>
@@ -648,7 +872,7 @@ export default function OnboardingScreen() {
           </CenteredStep>
         );
 
-      case 16: {
+      case 17: {
         const displayName = state.profile.name?.trim();
         return (
           <CenteredStep>
@@ -671,13 +895,13 @@ export default function OnboardingScreen() {
 
   const isImageStep = step === 0 || step === 1;
   const isLastStep = step === TOTAL_STEPS - 1;
-  const isPaywallStep = step === 15;
+  const isPaywallStep = step === 16;
   const nameStepContinueDisabled = step === 3 && userNameInput.trim().length === 0;
 
   const getNextLabel = () => {
     if (isLastStep) return "Begin";
     if (isPaywallStep) return "Start Free Trial";
-    if (step === 12 || step === 13) return "Allow";
+    if (step === 13 || step === 14) return "Allow";
     return "Continue";
   };
 
@@ -789,7 +1013,7 @@ function CenteredStep({ children }: { children: React.ReactNode }) {
 function AppLockStep({
   onContinue,
   progressCurrent = 2,
-  progressTotal = 17,
+  progressTotal = 18,
 }: {
   onContinue?: () => void;
   progressCurrent?: number;
@@ -1143,10 +1367,6 @@ const styles = StyleSheet.create({
     width: "100%",
     textAlign: "left",
   },
-  imageSlideIntroEmphasis: {
-    color: "#D7C0FF",
-    opacity: 1,
-  },
   imageStepArrowFab: {
     position: "absolute",
     right: 24,
@@ -1324,6 +1544,35 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontFamily: "Inter_500Medium",
     color: "#f0eaff",
+  },
+  screenTimeReflect: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 340,
+    alignSelf: "flex-start",
+    paddingHorizontal: 4,
+    paddingTop: 32,
+    paddingBottom: 12,
+  },
+  screenTimeReflectBlock: {
+    marginBottom: 30,
+  },
+  screenTimeReflectParagraph: {
+    fontSize: 22,
+    fontFamily: "Inter_500Medium",
+    lineHeight: 32,
+    textAlign: "left",
+    width: "100%",
+  },
+  screenTimeReflectBody: {
+    fontSize: 22,
+    fontFamily: "Inter_500Medium",
+    lineHeight: 32,
+  },
+  screenTimeReflectAccent: {
+    fontSize: 22,
+    fontFamily: "Inter_700Bold",
+    lineHeight: 32,
   },
   pillRow: {
     flexDirection: "row",
