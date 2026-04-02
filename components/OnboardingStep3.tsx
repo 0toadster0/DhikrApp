@@ -19,16 +19,20 @@ type Props = {
   progressTotal?: number;
 };
 
-const IG_LOGO = require("@/assets/images/onboarding-apps/IG-logo.png");
-const TT_LOGO = require("@/assets/images/onboarding-apps/TT-logo.png");
-const SNAPCHAT_LOGO = require("@/assets/images/onboarding-apps/Snapchat-logo.png");
-const X_LOGO = require("@/assets/images/onboarding-apps/X-logo.png");
+const IG_LOGO = require("@/assets/images/onboarding-apps/instagram-updated.png");
+const TT_LOGO = require("@/assets/images/onboarding-apps/tiktok-updated.png");
+const SNAPCHAT_LOGO = require("@/assets/images/onboarding-apps/snapchat-updated.png");
+const X_LOGO = require("@/assets/images/onboarding-apps/x-updated.png");
 
-const APPS = [
-  { id: "instagram", label: "Instagram", source: IG_LOGO, imageScale: 1.18, imageOffsetY: -2 },
-  { id: "tiktok", label: "TikTok", source: TT_LOGO, imageScale: 1.08, imageOffsetY: 0 },
-  { id: "snapchat", label: "Snapchat", source: SNAPCHAT_LOGO, imageScale: 1.35, imageOffsetY: 0 },
-  { id: "x", label: "X", source: X_LOGO, imageScale: 1.08, imageOffsetY: 0 },
+type LockAppId = "instagram" | "tiktok" | "snapchat" | "x";
+
+const APP_ICON_RENDER_SIZE = 52;
+
+const APPS: Array<{ id: LockAppId; label: string; source: unknown }> = [
+  { id: "instagram", label: "Instagram", source: IG_LOGO },
+  { id: "tiktok", label: "TikTok", source: TT_LOGO },
+  { id: "snapchat", label: "Snapchat", source: SNAPCHAT_LOGO },
+  { id: "x", label: "X", source: X_LOGO },
 ];
 
 export function OnboardingStep3({
@@ -58,33 +62,59 @@ export function OnboardingStep3({
 
   return (
     <Animated.View entering={FadeIn.duration(420)} style={styles.container}>
-      <View style={styles.top}>
-        <View style={styles.iconGrid}>
-          {APPS.map((app) => (
-            <View key={app.id} style={styles.appCard} accessibilityLabel={`${app.label} (locked)`}>
-              <View style={styles.appIconClip} pointerEvents="none">
-                <Image
-                  source={app.source as ImageSourcePropType}
-                  style={[
-                    styles.appIconImage,
-                    {
-                      transform: [{ scale: app.imageScale }, { translateY: app.imageOffsetY }],
-                    },
-                  ]}
-                  resizeMode="cover"
-                />
-                <View style={styles.appCardOverlay} />
-              </View>
-              <View style={styles.lockBadge} pointerEvents="none">
-                <Ionicons name="lock-closed" size={12} color="rgba(235,225,255,0.85)" />
-              </View>
+      <View style={styles.contentWrapper}>
+        <View style={styles.contentStack}>
+          <View style={styles.iconGrid}>
+            <View style={styles.iconRow}>
+              {APPS.slice(0, 2).map((app) => (
+                <View key={app.id} style={styles.appCard} accessibilityLabel={`${app.label} (locked)`}>
+                  <View style={styles.appIconClip} pointerEvents="none">
+                    <Image
+                      source={app.source as ImageSourcePropType}
+                      style={[
+                        styles.appIconImage,
+                        {
+                          width: APP_ICON_RENDER_SIZE,
+                          height: APP_ICON_RENDER_SIZE,
+                        },
+                      ]}
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <View style={styles.lockBadge} pointerEvents="none">
+                    <Ionicons name="lock-closed" size={15} color="rgba(235,225,255,0.9)" />
+                  </View>
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
 
-        <View style={styles.copyWrap}>
-          <Text style={styles.line1}>Lock distracting apps</Text>
-          <Text style={styles.line2}>Instagram, TikTok, Snapchat & X</Text>
+            <View style={styles.iconRow}>
+              {APPS.slice(2, 4).map((app) => (
+                <View key={app.id} style={styles.appCard} accessibilityLabel={`${app.label} (locked)`}>
+                  <View style={styles.appIconClip} pointerEvents="none">
+                    <Image
+                      source={app.source as ImageSourcePropType}
+                      style={[
+                        styles.appIconImage,
+                        {
+                          width: APP_ICON_RENDER_SIZE,
+                          height: APP_ICON_RENDER_SIZE,
+                        },
+                      ]}
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <View style={styles.lockBadge} pointerEvents="none">
+                    <Ionicons name="lock-closed" size={15} color="rgba(235,225,255,0.9)" />
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.copyWrap}>
+            <Text style={styles.line1}>Lock distracting apps</Text>
+          </View>
         </View>
       </View>
 
@@ -117,64 +147,63 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: 16,
+    paddingTop: 0,
     paddingHorizontal: 22,
     paddingBottom: 30,
   },
-  top: {
+  contentWrapper: {
+    flex: 1,
     alignItems: "center",
-    gap: 10,
+    justifyContent: "center",
+  },
+  contentStack: {
+    alignItems: "center",
+    gap: 22,
   },
   iconGrid: {
+    flexDirection: "column",
+    gap: 22,
+    width: 164,
+    alignItems: "center",
+  },
+  iconRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
     justifyContent: "center",
-    gap: 14,
-    width: 232,
+    gap: 22,
   },
   appCard: {
-    width: 108,
-    height: 108,
-    borderRadius: 28,
-    backgroundColor: "rgba(45,26,74,0.42)",
+    width: 82,
+    height: 82,
+    borderRadius: 23,
+    backgroundColor: "rgba(255,255,255,0.05)",
     borderWidth: 1,
-    borderColor: "rgba(196,162,247,0.12)",
+    borderColor: "rgba(255,255,255,0.08)",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
-    padding: 10,
     overflow: "hidden",
   },
   appIconClip: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 17,
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(16,8,28,0.62)",
-  },
-  appCardOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(4,2,12,0.26)",
+    position: "relative",
   },
   appIconImage: {
-    width: "100%",
-    height: "100%",
-    opacity: 0.82,
+    opacity: 1,
   },
   lockBadge: {
     position: "absolute",
-    top: 10,
-    right: 10,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    top: 6,
+    right: 6,
+    padding: 3,
+    borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(12,6,23,0.62)",
-    borderWidth: 1,
-    borderColor: "rgba(196,162,247,0.2)",
+    backgroundColor: "rgba(0,0,0,0.4)",
   },
   copyWrap: {
     alignItems: "center",

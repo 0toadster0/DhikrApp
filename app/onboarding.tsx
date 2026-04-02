@@ -15,6 +15,7 @@ import Animated, {
   Easing,
   FadeIn,
   FadeInDown,
+  withDelay,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -26,10 +27,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 
 import { GradientBackground } from "@/components/GradientBackground";
+import { NormalizedLockAppIcon, type LockAppId } from "@/components/NormalizedLockAppIcon";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { ProgressDots } from "@/components/ProgressDots";
 import { SliderInput } from "@/components/SliderInput";
-import { OnboardingStep3 } from "@/components/OnboardingStep3";
 import { mascots } from "@/constants/mascots";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
@@ -38,6 +39,13 @@ const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
 const ONBOARDING_IMAGE_1 = require("@/assets/mascot/onboarding1.png");
 const ONBOARDING_IMAGE_2 = require("@/assets/mascot/onboarding2.png");
+
+const APP_LOCK_APPS: Array<{ id: LockAppId; label: string }> = [
+  { id: "instagram", label: "Instagram" },
+  { id: "tiktok", label: "TikTok" },
+  { id: "snapchat", label: "Snapchat" },
+  { id: "x", label: "X" },
+];
 
 const GOALS = [
   { id: "pray", label: "Pray more consistently" },
@@ -191,7 +199,9 @@ export default function OnboardingScreen() {
         );
 
       case 2:
-        return <OnboardingStep3 onContinue={goNext} progressCurrent={step} progressTotal={TOTAL_STEPS} />;
+        return (
+          <AppLockStep onContinue={goNext} progressCurrent={step} progressTotal={TOTAL_STEPS} />
+        );
 
       case 3:
         return (
@@ -625,6 +635,166 @@ function CenteredStep({ children }: { children: React.ReactNode }) {
   return (
     <Animated.View entering={FadeIn.duration(400)} style={styles.centeredStep}>
       {children}
+    </Animated.View>
+  );
+}
+
+function AppLockStep({
+  onContinue,
+  progressCurrent = 2,
+  progressTotal = 17,
+}: {
+  onContinue?: () => void;
+  progressCurrent?: number;
+  progressTotal?: number;
+}) {
+  const pulse = useSharedValue(0);
+  const cardFloat1 = useSharedValue(0);
+  const cardFloat2 = useSharedValue(0);
+  const cardFloat3 = useSharedValue(0);
+  const cardFloat4 = useSharedValue(0);
+  const progressValue = Math.max(0, Math.min(1, (progressCurrent + 1) / progressTotal));
+
+  useEffect(() => {
+    // Gentle, non-distracting arrow pulse.
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 900, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 900, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
+    );
+
+    // Very subtle staggered drift for a calmer, premium feel.
+    cardFloat1.value = withDelay(
+      0,
+      withRepeat(
+        withSequence(
+          withTiming(-1.8, { duration: 3400, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0, { duration: 3400, easing: Easing.inOut(Easing.sin) })
+        ),
+        -1,
+        false
+      )
+    );
+    cardFloat2.value = withDelay(
+      280,
+      withRepeat(
+        withSequence(
+          withTiming(-2.2, { duration: 3800, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0, { duration: 3800, easing: Easing.inOut(Easing.sin) })
+        ),
+        -1,
+        false
+      )
+    );
+    cardFloat3.value = withDelay(
+      520,
+      withRepeat(
+        withSequence(
+          withTiming(-1.6, { duration: 3600, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0, { duration: 3600, easing: Easing.inOut(Easing.sin) })
+        ),
+        -1,
+        false
+      )
+    );
+    cardFloat4.value = withDelay(
+      760,
+      withRepeat(
+        withSequence(
+          withTiming(-2, { duration: 4000, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0, { duration: 4000, easing: Easing.inOut(Easing.sin) })
+        ),
+        -1,
+        false
+      )
+    );
+  }, [pulse, cardFloat1, cardFloat2, cardFloat3, cardFloat4]);
+
+  const arrowStyle = useAnimatedStyle(() => ({
+    opacity: 0.6 + 0.2 * pulse.value,
+    transform: [{ translateY: -0.95 * pulse.value }],
+  }));
+  const cardFloatStyle1 = useAnimatedStyle(() => ({
+    transform: [{ translateY: cardFloat1.value }],
+  }));
+  const cardFloatStyle2 = useAnimatedStyle(() => ({
+    transform: [{ translateY: cardFloat2.value }],
+  }));
+  const cardFloatStyle3 = useAnimatedStyle(() => ({
+    transform: [{ translateY: cardFloat3.value }],
+  }));
+  const cardFloatStyle4 = useAnimatedStyle(() => ({
+    transform: [{ translateY: cardFloat4.value }],
+  }));
+  const cardFloatStyles = [cardFloatStyle1, cardFloatStyle2, cardFloatStyle3, cardFloatStyle4];
+
+  return (
+    <Animated.View entering={FadeIn.duration(420)} style={styles.appLockContainer}>
+      <View style={styles.contentWrapper}>
+        <View style={styles.contentStack}>
+          <View style={styles.appLockIconGrid}>
+            <View style={styles.appLockIconRow}>
+              {APP_LOCK_APPS.slice(0, 2).map((app, index) => (
+                <Animated.View
+                  key={app.id}
+                  style={[styles.appLockCard, cardFloatStyles[index]]}
+                  accessibilityLabel={`${app.label} (locked)`}
+                >
+                  <View style={styles.appLockCardGlow} pointerEvents="none" />
+                  <NormalizedLockAppIcon id={app.id} />
+                  <View style={styles.appLockLockBadge} pointerEvents="none">
+                    <Ionicons name="lock-closed" size={15} color="rgba(235,225,255,0.9)" />
+                  </View>
+                </Animated.View>
+              ))}
+            </View>
+
+            <View style={styles.appLockIconRow}>
+              {APP_LOCK_APPS.slice(2, 4).map((app, index) => (
+                <Animated.View
+                  key={app.id}
+                  style={[styles.appLockCard, cardFloatStyles[index + 2]]}
+                  accessibilityLabel={`${app.label} (locked)`}
+                >
+                  <View style={styles.appLockCardGlow} pointerEvents="none" />
+                  <NormalizedLockAppIcon id={app.id} />
+                  <View style={styles.appLockLockBadge} pointerEvents="none">
+                    <Ionicons name="lock-closed" size={15} color="rgba(235,225,255,0.9)" />
+                  </View>
+                </Animated.View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.appLockCopyWrap}>
+            <Text style={styles.appLockHeadline}>Lock distracting apps</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.appLockBottom}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Continue"
+          onPress={onContinue}
+          disabled={!onContinue}
+          hitSlop={12}
+          style={styles.appLockArrowPress}
+        >
+          <Animated.View style={[styles.appLockArrowInner, arrowStyle]}>
+            <Ionicons name="chevron-down" size={32} color="rgba(240,234,255,0.64)" />
+          </Animated.View>
+        </Pressable>
+
+        <View style={styles.appLockProgressWrap} pointerEvents="none">
+          <View style={styles.appLockProgressTrack}>
+            <View style={[styles.appLockProgressFill, { width: `${progressValue * 100}%` }]} />
+          </View>
+        </View>
+      </View>
     </Animated.View>
   );
 }
@@ -1281,6 +1451,134 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: "center",
+  },
+  appLockContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "space-between",
+    // Move the grid+headline block down to avoid a top-heavy feel.
+    paddingTop: 0,
+    paddingHorizontal: 22,
+    paddingBottom: 40,
+  },
+  contentWrapper: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  contentStack: {
+    alignItems: "center",
+    gap: 22,
+  },
+  appLockIconGrid: {
+    flexDirection: "column",
+    gap: 26,
+    alignItems: "center",
+  },
+  appLockIconRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 26,
+  },
+  appLockCard: {
+    width: 82,
+    height: 82,
+    borderRadius: 23,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    overflow: "visible",
+  },
+  appLockCardGlow: {
+    position: "absolute",
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    backgroundColor: "rgba(196,162,247,0.1)",
+    shadowColor: "#C4A2F7",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 0,
+  },
+  appLockIconClip: {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  appLockIconImage: {
+    opacity: 1,
+  },
+  appLockLockBadge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 3,
+    borderRadius: 999,
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  appLockCopyWrap: {
+    alignItems: "center",
+    width: 196,
+    paddingHorizontal: 0,
+    gap: 0,
+  },
+  appLockHeadline: {
+    fontSize: 21,
+    fontFamily: "Inter_500Medium",
+    color: "#f0eaff",
+    textAlign: "center",
+    lineHeight: 27,
+    letterSpacing: -0.08,
+  },
+  appLockSubline: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: "rgba(196,162,247,0.62)",
+    textAlign: "center",
+    lineHeight: 19,
+  },
+  appLockArrowPress: {
+    marginBottom: 0,
+  },
+  appLockArrowInner: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  appLockBottom: {
+    width: "100%",
+    alignItems: "center",
+    gap: 22,
+    paddingBottom: 0,
+  },
+  appLockProgressWrap: {
+    width: "100%",
+    alignItems: "center",
+    marginTop: 0,
+  },
+  appLockProgressTrack: {
+    width: "78%",
+    height: 2,
+    borderRadius: 999,
+    backgroundColor: "rgba(196,162,247,0.12)",
+    overflow: "hidden",
+  },
+  appLockProgressFill: {
+    height: "100%",
+    borderRadius: 999,
+    backgroundColor: "rgba(235,226,255,0.46)",
   },
   nextBtn: {
     width: "100%",
