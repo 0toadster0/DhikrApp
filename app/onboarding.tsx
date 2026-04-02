@@ -83,6 +83,13 @@ export default function OnboardingScreen() {
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
+  /** Image steps 0–1: intro line ~12% from top (11–14% band), respecting notch */
+  const imageSlideIntroTop = Math.max(insets.top + 8, SCREEN_H * 0.125);
+  /** Image steps 0–1: main statement anchored above FAB; keeps lower third visually open then statement low */
+  const imageSlideStatementBottom = bottomPadding + 92;
+  /** 24px side padding, cap width ~84% so lines do not stretch edge-to-edge */
+  const imageSlideTextMaxW = Math.min(Math.round(SCREEN_W * 0.84), SCREEN_W - 48);
+
   const goNext = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (step < TOTAL_STEPS - 1) {
@@ -148,13 +155,18 @@ export default function OnboardingScreen() {
             />
             <Animated.View
               entering={FadeInDown.delay(300).duration(600)}
-              style={styles.bottomTextBlock}
+              style={[styles.imageSlideIntroWrap, { top: imageSlideIntroTop }]}
             >
-              <Text style={styles.heroTitle}>
-                social media addiction is pulling you away from Allah
+              <Text style={[styles.imageSlideIntroText, { maxWidth: imageSlideTextMaxW }]}>
+                Endless scrolling can slowly pull you away{"\n"}from what matters most
               </Text>
-              <Text style={styles.heroSub}>
-                Endless scrolling can slowly pull you away from what matters most
+            </Animated.View>
+            <Animated.View
+              entering={FadeInDown.delay(420).duration(600)}
+              style={[styles.imageSlideStatementWrap, { bottom: imageSlideStatementBottom }]}
+            >
+              <Text style={[styles.imageSlideStatementText, { maxWidth: imageSlideTextMaxW }]}>
+                Social media addiction is pulling you{"\n"}away from Allah
               </Text>
             </Animated.View>
           </View>
@@ -174,11 +186,18 @@ export default function OnboardingScreen() {
             />
             <Animated.View
               entering={FadeInDown.delay(300).duration(600)}
-              style={styles.bottomTextBlock}
+              style={[styles.imageSlideIntroWrap, { top: imageSlideIntroTop }]}
             >
-              <Text style={styles.heroTitle}>You can always return</Text>
-              <Text style={styles.heroSub}>
-                Even 30 seconds of dhikr can help you choose faith first again
+              <Text style={[styles.imageSlideIntroText, { maxWidth: imageSlideTextMaxW }]}>
+                Even 30 seconds of dhikr{"\n"}can help you choose faith first again
+              </Text>
+            </Animated.View>
+            <Animated.View
+              entering={FadeInDown.delay(420).duration(600)}
+              style={[styles.imageSlideStatementWrap, { bottom: imageSlideStatementBottom }]}
+            >
+              <Text style={[styles.imageSlideStatementText, { maxWidth: imageSlideTextMaxW }]}>
+                you can always return
               </Text>
             </Animated.View>
           </View>
@@ -537,7 +556,15 @@ export default function OnboardingScreen() {
 
   return (
     <GradientBackground style={{ flex: 1 }}>
-      <View style={[styles.container, { paddingTop: topPadding, paddingBottom: bottomPadding }]}>
+      <View
+        style={[
+          styles.container,
+          {
+            paddingTop: isImageStep ? 0 : topPadding,
+            paddingBottom: isImageStep ? 0 : bottomPadding,
+          },
+        ]}
+      >
         {!isImageStep && (
           <View style={styles.header}>
             {step > 0 && (
@@ -561,14 +588,32 @@ export default function OnboardingScreen() {
           {renderStep()}
         </ScrollView>
 
-        <View style={styles.footer}>
-          <PrimaryButton
-            label={getNextLabel()}
+        {!isImageStep ? (
+          <View style={styles.footer}>
+            <PrimaryButton
+              label={getNextLabel()}
+              onPress={goNext}
+              style={styles.nextBtn}
+              variant={isPaywallStep ? "gold" : "primary"}
+            />
+          </View>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Continue"
             onPress={goNext}
-            style={styles.nextBtn}
-            variant={isPaywallStep ? "gold" : "primary"}
-          />
-        </View>
+            style={[
+              styles.imageStepArrowFab,
+              {
+                bottom: bottomPadding + 20,
+                backgroundColor: colors.primary,
+              },
+            ]}
+            hitSlop={12}
+          >
+            <Ionicons name="arrow-forward" size={26} color={colors.primaryForeground} />
+          </Pressable>
+        )}
       </View>
     </GradientBackground>
   );
@@ -702,7 +747,7 @@ const styles = StyleSheet.create({
   },
   fullScreen: {
     width: SCREEN_W,
-    height: SCREEN_H * 0.75,
+    height: SCREEN_H,
     position: "relative",
   },
   fullImage: {
@@ -716,14 +761,19 @@ const styles = StyleSheet.create({
     right: 0,
     height: "60%",
   },
-  bottomTextBlock: {
+  /** Onboarding image slides 0–1 only: top intro zone (not title/body hierarchy) */
+  imageSlideIntroWrap: {
     position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 28,
-    paddingBottom: 32,
-    gap: 12,
+    left: 24,
+    right: 24,
+    alignItems: "center",
+  },
+  /** Onboarding image slides 0–1 only: main statement, anchored low */
+  imageSlideStatementWrap: {
+    position: "absolute",
+    left: 24,
+    right: 24,
+    alignItems: "center",
   },
   smallTag: {
     fontSize: 13,
@@ -731,19 +781,37 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     letterSpacing: 0.5,
   },
-  heroTitle: {
-    fontSize: 30,
-    fontFamily: "Inter_700Bold",
-    color: "#f0eaff",
-    lineHeight: 38,
-    maxWidth: 320,
+  imageSlideIntroText: {
+    fontSize: 15,
+    fontFamily: "Inter_500Medium",
+    color: "rgba(235,224,255,0.88)",
+    lineHeight: 20,
+    letterSpacing: 0.15,
+    width: "100%",
+    textAlign: "center",
   },
-  heroSub: {
-    fontSize: 16,
-    color: "rgba(224,208,255,0.75)",
-    fontFamily: "Inter_400Regular",
-    lineHeight: 25,
-    maxWidth: 300,
+  imageSlideStatementText: {
+    fontSize: 30,
+    fontFamily: "Inter_600SemiBold",
+    color: "#f4eeff",
+    lineHeight: 38,
+    letterSpacing: -0.3,
+    width: "100%",
+    textAlign: "center",
+  },
+  imageStepArrowFab: {
+    position: "absolute",
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#C4A2F7",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 16,
+    elevation: 8,
   },
   mascotMedium: {
     width: 140,
