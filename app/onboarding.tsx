@@ -83,10 +83,8 @@ export default function OnboardingScreen() {
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
-  /** Image steps 0–1: intro line ~12% from top (11–14% band), respecting notch */
-  const imageSlideIntroTop = Math.max(insets.top + 8, SCREEN_H * 0.125);
-  /** Image steps 0–1: main statement anchored above FAB; keeps lower third visually open then statement low */
-  const imageSlideStatementBottom = bottomPadding + 92;
+  /** Image steps 0–1: intro line ~10% from top (9–11% band), respecting notch */
+  const imageSlideIntroTop = Math.max(insets.top + 6, SCREEN_H * 0.105);
   /** 24px side padding, cap width ~84% so lines do not stretch edge-to-edge */
   const imageSlideTextMaxW = Math.min(Math.round(SCREEN_W * 0.84), SCREEN_W - 48);
 
@@ -158,15 +156,7 @@ export default function OnboardingScreen() {
               style={[styles.imageSlideIntroWrap, { top: imageSlideIntroTop }]}
             >
               <Text style={[styles.imageSlideIntroText, { maxWidth: imageSlideTextMaxW }]}>
-                Endless scrolling can slowly pull you away{"\n"}from what matters most
-              </Text>
-            </Animated.View>
-            <Animated.View
-              entering={FadeInDown.delay(420).duration(600)}
-              style={[styles.imageSlideStatementWrap, { bottom: imageSlideStatementBottom }]}
-            >
-              <Text style={[styles.imageSlideStatementText, { maxWidth: imageSlideTextMaxW }]}>
-                Social media addiction is pulling you{"\n"}away from Allah
+                Social media addiction is taking you away from <Text style={styles.imageSlideIntroEmphasis}>Allah</Text>.
               </Text>
             </Animated.View>
           </View>
@@ -189,15 +179,7 @@ export default function OnboardingScreen() {
               style={[styles.imageSlideIntroWrap, { top: imageSlideIntroTop }]}
             >
               <Text style={[styles.imageSlideIntroText, { maxWidth: imageSlideTextMaxW }]}>
-                Even 30 seconds of dhikr{"\n"}can help you choose faith first again
-              </Text>
-            </Animated.View>
-            <Animated.View
-              entering={FadeInDown.delay(420).duration(600)}
-              style={[styles.imageSlideStatementWrap, { bottom: imageSlideStatementBottom }]}
-            >
-              <Text style={[styles.imageSlideStatementText, { maxWidth: imageSlideTextMaxW }]}>
-                you can always return
+                <Text style={styles.imageSlideIntroEmphasis}>Dhikr App</Text> can help you choose your faith first daily.
               </Text>
             </Animated.View>
           </View>
@@ -605,7 +587,7 @@ export default function OnboardingScreen() {
             style={[
               styles.imageStepArrowFab,
               {
-                bottom: bottomPadding + 20,
+                bottom: bottomPadding + 5,
                 backgroundColor: colors.primary,
               },
             ]}
@@ -766,14 +748,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 24,
     right: 24,
-    alignItems: "center",
-  },
-  /** Onboarding image slides 0–1 only: main statement, anchored low */
-  imageSlideStatementWrap: {
-    position: "absolute",
-    left: 24,
-    right: 24,
-    alignItems: "center",
+    alignItems: "flex-start",
   },
   smallTag: {
     fontSize: 13,
@@ -782,22 +757,17 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   imageSlideIntroText: {
-    fontSize: 15,
+    fontSize: 31,
     fontFamily: "Inter_500Medium",
-    color: "rgba(235,224,255,0.88)",
-    lineHeight: 20,
-    letterSpacing: 0.15,
-    width: "100%",
-    textAlign: "center",
-  },
-  imageSlideStatementText: {
-    fontSize: 30,
-    fontFamily: "Inter_600SemiBold",
     color: "#f4eeff",
-    lineHeight: 38,
-    letterSpacing: -0.3,
+    lineHeight: 39,
+    letterSpacing: -0.2,
     width: "100%",
-    textAlign: "center",
+    textAlign: "left",
+  },
+  imageSlideIntroEmphasis: {
+    color: "#D7C0FF",
+    opacity: 1,
   },
   imageStepArrowFab: {
     position: "absolute",
