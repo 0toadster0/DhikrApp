@@ -71,15 +71,18 @@ const GOALS = [
 /** Goals step: show this many option rows before inner scroll; must match `goalList` gap. */
 const GOALS_LIST_VISIBLE_ROWS = 4;
 const GOALS_LIST_ROW_GAP = 10;
+/** Extra viewport height on goals-only list so the next row’s top border peeks (matches struggle-step cue). */
+const GOALS_STEP_SCROLL_PEEK_PX = 12;
 /** Fallback row height (~goalsPickGradient padding + single line) until first `onLayout`. */
 const GOALS_ROW_FALLBACK_HEIGHT = 52;
 
 const STRUGGLE_TIMES = [
-  { id: "morning", label: "Morning", sub: "Right after waking up" },
-  { id: "afternoon", label: "After school / work" },
-  { id: "evening", label: "Evening", sub: "Wind-down time" },
-  { id: "latenight", label: "Late night", sub: "Before sleep" },
-  { id: "bored", label: "When bored", sub: "Any time" },
+  { id: "trust_plan", label: "Trusting Allah's plan, even when life feels uncertain" },
+  { id: "faith_values", label: "Living in a way that reflects my faith and values" },
+  { id: "turn_first", label: "Turning to Allah first when I feel overwhelmed" },
+  { id: "time_matters", label: "Using my time and energy for what truly matters" },
+  { id: "prayer_discipline", label: "Building my life around prayer, discipline, and remembrance" },
+  { id: "closer_daily", label: "Becoming someone who is closer to Allah in everyday life" },
 ];
 
 const TOTAL_STEPS = 18;
@@ -345,12 +348,18 @@ function GoalsReflectionMascot() {
 
 function GoalsSelectRow({
   label,
+  sub,
   selected,
   onPress,
+  /** Tighter padding, top-aligned check, smaller type — for multi-line option copy. */
+  compact = false,
 }: {
   label: string;
+  /** Optional second line; same typography as struggle / ritual subs elsewhere. */
+  sub?: string;
   selected: boolean;
   onPress: () => void;
+  compact?: boolean;
 }) {
   const colors = useColors();
   const checkProgress = useSharedValue(selected ? 1 : 0);
@@ -410,10 +419,10 @@ function GoalsSelectRow({
           locations={[0, 0.42, 1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.goalsPickGradient}
+          style={[styles.goalsPickGradient, compact && styles.goalsPickGradientCompact]}
         >
-          <View style={styles.goalsPickRow}>
-            <View style={styles.goalsCheckRing}>
+          <View style={[styles.goalsPickRow, compact && styles.goalsPickRowTopAlign]}>
+            <View style={[styles.goalsCheckRing, compact && styles.goalsCheckRingTopAlign]}>
               <Animated.View
                 style={[styles.goalsCheckFill, fillStyle, { backgroundColor: colors.primary }]}
               />
@@ -421,14 +430,18 @@ function GoalsSelectRow({
                 <Ionicons name="checkmark" size={14} color="#1a0a2e" />
               </Animated.View>
             </View>
-            <Text
-              style={[
-                styles.goalLabel,
-                { color: selected ? colors.foreground : colors.mutedForeground },
-              ]}
-            >
-              {label}
-            </Text>
+            <View style={styles.goalsPickLabelCol}>
+              <Text
+                style={[
+                  styles.goalLabel,
+                  compact && styles.goalLabelCompact,
+                  { flex: 0, color: selected ? colors.foreground : colors.mutedForeground },
+                ]}
+              >
+                {label}
+              </Text>
+              {sub ? <Text style={styles.ritualSub}>{sub}</Text> : null}
+            </View>
           </View>
         </LinearGradient>
       </View>
@@ -575,6 +588,12 @@ export default function OnboardingScreen() {
     return GOALS_LIST_VISIBLE_ROWS * rowH + (GOALS_LIST_VISIBLE_ROWS - 1) * GOALS_LIST_ROW_GAP;
   }, [goalsOptionRowHeight]);
 
+  /** Goals pick list: slightly taller viewport so a sliver of the row below “Stop doomscrolling” shows. */
+  const goalsPickListViewportMaxHeight = useMemo(
+    () => goalsListViewportMaxHeight + GOALS_STEP_SCROLL_PEEK_PX,
+    [goalsListViewportMaxHeight]
+  );
+
   const goalsScrollY = useSharedValue(0);
   const goalsScrollContentH = useSharedValue(0);
   const goalsScrollViewportH = useSharedValue(0);
@@ -590,7 +609,7 @@ export default function OnboardingScreen() {
   }, [goalsScrollHintOpacity]);
 
   useEffect(() => {
-    if (step !== 6) {
+    if (step !== 6 && step !== 7) {
       goalsScrollHintOpacity.value = withTiming(0, { duration: 160 });
       goalsScrollY.value = 0;
       if (goalsScrollHintIdleRef.current) {
@@ -599,6 +618,7 @@ export default function OnboardingScreen() {
       }
       return;
     }
+    goalsScrollY.value = 0;
     goalsScrollHintOpacity.value = 0;
     const tEnter = setTimeout(() => {
       goalsScrollHintOpacity.value = withTiming(0.34, { duration: 440, easing: Easing.out(Easing.cubic) });
@@ -888,7 +908,7 @@ export default function OnboardingScreen() {
             <View style={styles.goalsListScrollRow}>
               <View style={styles.goalsListScrollListCol}>
                 <GoalsAnimatedScrollView
-                  style={[styles.goalsListScrollViewport, { maxHeight: goalsListViewportMaxHeight }]}
+                  style={[styles.goalsListScrollViewport, { maxHeight: goalsPickListViewportMaxHeight }]}
                   contentContainerStyle={styles.goalsListScrollContent}
                   showsVerticalScrollIndicator={false}
                   bounces
@@ -938,38 +958,67 @@ export default function OnboardingScreen() {
 
       case 7:
         return (
-          <CenteredStep>
-            <Text style={styles.stepTitle}>When do you{"\n"}struggle most?</Text>
-            <Text style={styles.stepSub}>We'll send gentle reminders at the right moments.</Text>
-            <View style={styles.goalList}>
-              {STRUGGLE_TIMES.map((t) => {
-                const sel = selectedTimes.includes(t.id);
-                return (
-                  <Pressable
-                    key={t.id}
-                    style={[
-                      styles.goalItem,
-                      sel && styles.goalItemSelected,
-                      { borderColor: sel ? colors.primary : colors.border },
-                    ]}
-                    onPress={() => toggleTime(t.id)}
-                  >
-                    <View style={[styles.goalCheck, sel && { backgroundColor: colors.primary }]}>
-                      {sel && <Ionicons name="checkmark" size={14} color="#1a0a2e" />}
-                    </View>
-                    <View>
-                      <Text style={[styles.goalLabel, { color: sel ? colors.foreground : colors.mutedForeground }]}>
-                        {t.label}
-                      </Text>
-                      {t.sub && (
-                        <Text style={[styles.ritualSub, { marginTop: 1 }]}>{t.sub}</Text>
-                      )}
-                    </View>
-                  </Pressable>
-                );
-              })}
+          <Animated.View entering={FadeIn.duration(400)} style={styles.goalsReflectStep}>
+            <View style={styles.goalsReflectTitleBlock}>
+              <Text style={[styles.goalsStepTitle, styles.goalsRelationshipTitle]}>
+                What does a strong relationship with Allah look like to you?
+              </Text>
             </View>
-          </CenteredStep>
+            <View style={[styles.goalsReflectSubBlockCentered, styles.goalsReflectSubRelationship]}>
+              <Text style={[styles.goalsStepSubCentered, styles.goalsRelationshipSub]}>
+                Choose all that resonate
+              </Text>
+            </View>
+            <View style={[styles.goalsListScrollRow, styles.goalsRelationshipListScrollRow]}>
+              <View style={styles.goalsListScrollListCol}>
+                <GoalsAnimatedScrollView
+                  style={[styles.goalsListScrollViewport, { maxHeight: goalsListViewportMaxHeight }]}
+                  contentContainerStyle={[styles.goalsListScrollContent, styles.goalsRelationshipListScrollContent]}
+                  showsVerticalScrollIndicator={false}
+                  bounces
+                  nestedScrollEnabled
+                  keyboardShouldPersistTaps="handled"
+                  scrollEventThrottle={16}
+                  onScroll={goalsScrollHandler}
+                  onLayout={(e) => {
+                    goalsScrollViewportH.value = e.nativeEvent.layout.height;
+                  }}
+                  onContentSizeChange={(_, h) => {
+                    goalsScrollContentH.value = h;
+                  }}
+                  onScrollBeginDrag={bumpGoalsScrollHint}
+                  onScrollEndDrag={bumpGoalsScrollHint}
+                  onMomentumScrollEnd={bumpGoalsScrollHint}
+                >
+                  {STRUGGLE_TIMES.map((t, index) => (
+                    <View
+                      key={t.id}
+                      style={styles.goalsListRowMeasureWrap}
+                      onLayout={index === 0 ? onFirstGoalsRowLayout : undefined}
+                    >
+                      <GoalsSelectRow
+                        label={t.label}
+                        compact
+                        selected={selectedTimes.includes(t.id)}
+                        onPress={() => toggleTime(t.id)}
+                      />
+                    </View>
+                  ))}
+                </GoalsAnimatedScrollView>
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={["transparent", "rgba(26,10,46,0.42)"]}
+                  locations={[0.35, 1]}
+                  style={styles.goalsScrollBottomFade}
+                />
+              </View>
+              <Animated.View pointerEvents="none" style={[styles.goalsScrollRail, goalsScrollRailStyle]}>
+                <View style={styles.goalsScrollTrack}>
+                  <Animated.View style={[styles.goalsScrollThumb, goalsScrollThumbStyle]} />
+                </View>
+              </Animated.View>
+            </View>
+          </Animated.View>
         );
 
       case 8:
@@ -1228,7 +1277,7 @@ export default function OnboardingScreen() {
           contentContainerStyle={[
             styles.scrollContent,
             isImageStep && styles.scrollContentFull,
-            step === 6 && styles.scrollContentGoalsStep,
+            (step === 6 || step === 7) && styles.scrollContentGoalsStep,
           ]}
           showsVerticalScrollIndicator={false}
           bounces={false}
@@ -2128,6 +2177,13 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     gap: 10,
   },
+  /** Struggle step: same vertical rhythm as goalsReflectSubRow, subtitle only (no mascot offset). */
+  goalsReflectSubBlockCentered: {
+    width: "100%",
+    alignItems: "center",
+    marginTop: 18,
+    marginBottom: 18,
+  },
   goalsStepTitle: {
     fontSize: 29,
     fontFamily: "Inter_700Bold",
@@ -2149,6 +2205,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     maxWidth: 248,
     flexShrink: 1,
+  },
+  /** Same sizing/tone as goalsStepSub, centered for mascot-free struggle step. */
+  goalsStepSubCentered: {
+    fontSize: 15,
+    color: "rgba(196,162,247,0.5)",
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    lineHeight: 23,
+    paddingHorizontal: 4,
+    maxWidth: 310,
   },
   /** Matches OnboardingMascot: circular surface + glow; compact for header accent. */
   goalsMascotStage: {
@@ -2210,10 +2276,24 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 16,
   },
+  goalsPickGradientCompact: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
   goalsPickRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+  },
+  goalsPickRowTopAlign: {
+    alignItems: "flex-start",
+  },
+  goalsCheckRingTopAlign: {
+    marginTop: 2,
+  },
+  goalsPickLabelCol: {
+    flex: 1,
+    minWidth: 0,
   },
   goalsCheckRing: {
     width: 22,
@@ -2262,6 +2342,33 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "Inter_500Medium",
     flex: 1,
+  },
+  /** Multi-line onboarding options: tighter line rhythm, slightly smaller type. */
+  goalLabelCompact: {
+    fontSize: 16,
+    lineHeight: 23,
+    letterSpacing: -0.12,
+  },
+  goalsRelationshipTitle: {
+    maxWidth: 322,
+    lineHeight: 34,
+    fontSize: 28,
+  },
+  goalsReflectSubRelationship: {
+    marginTop: 12,
+    marginBottom: 2,
+    paddingTop: 10,
+  },
+  goalsRelationshipSub: {
+    lineHeight: 21,
+    fontSize: 14,
+  },
+  goalsRelationshipListScrollRow: {
+    marginTop: 44,
+  },
+  goalsRelationshipListScrollContent: {
+    gap: 7,
+    paddingBottom: 14,
   },
   sliderBlock: {
     alignItems: "center",
