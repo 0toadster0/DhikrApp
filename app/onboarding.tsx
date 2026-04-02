@@ -142,11 +142,13 @@ export default function OnboardingScreen() {
       case 0:
         return (
           <View style={styles.fullScreen}>
-            <Image
-              source={ONBOARDING_IMAGE_1}
-              style={styles.fullImage}
-              resizeMode="cover"
-            />
+            <View style={styles.imageSlideArtWrap}>
+              <Image
+                source={ONBOARDING_IMAGE_1}
+                style={styles.fullImage}
+                resizeMode="cover"
+              />
+            </View>
             <LinearGradient
               colors={["transparent", "rgba(13,6,32,0.65)", "#0d0620"]}
               style={styles.imageOverlay}
@@ -165,11 +167,13 @@ export default function OnboardingScreen() {
       case 1:
         return (
           <View style={styles.fullScreen}>
-            <Image
-              source={ONBOARDING_IMAGE_2}
-              style={styles.fullImage}
-              resizeMode="cover"
-            />
+            <View style={styles.imageSlideArtWrap}>
+              <Image
+                source={ONBOARDING_IMAGE_2}
+                style={styles.fullImage}
+                resizeMode="cover"
+              />
+            </View>
             <LinearGradient
               colors={["transparent", "rgba(13,6,32,0.55)", "#0d0620"]}
               style={styles.imageOverlay}
@@ -587,7 +591,7 @@ export default function OnboardingScreen() {
             style={[
               styles.imageStepArrowFab,
               {
-                bottom: bottomPadding + 5,
+                bottom: bottomPadding + 68,
                 backgroundColor: colors.primary,
               },
             ]}
@@ -742,6 +746,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: "60%",
+  },
+  imageSlideArtWrap: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: "hidden",
   },
   /** Onboarding image slides 0–1 only: top intro zone (not title/body hierarchy) */
   imageSlideIntroWrap: {
