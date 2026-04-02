@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, ImageSourcePropType, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   Easing,
   FadeIn,
@@ -19,11 +19,16 @@ type Props = {
   progressTotal?: number;
 };
 
+const IG_LOGO = require("@/assets/images/onboarding-apps/IG-logo.png");
+const TT_LOGO = require("@/assets/images/onboarding-apps/TT-logo.png");
+const SNAPCHAT_LOGO = require("@/assets/images/onboarding-apps/Snapchat-logo.png");
+const X_LOGO = require("@/assets/images/onboarding-apps/X-logo.png");
+
 const APPS = [
-  { id: "instagram", icon: "logo-instagram", label: "Instagram", brandColor: "#E1306C" },
-  { id: "tiktok", icon: "logo-tiktok", label: "TikTok", brandColor: "#00F2EA" },
-  { id: "snapchat", icon: "logo-snapchat", label: "Snapchat", brandColor: "#FFFC00" },
-  { id: "twitter", icon: "logo-twitter", label: "X / Twitter", brandColor: "#1DA1F2" },
+  { id: "instagram", label: "Instagram", source: IG_LOGO, imageScale: 1.18, imageOffsetY: -2 },
+  { id: "tiktok", label: "TikTok", source: TT_LOGO, imageScale: 1.08, imageOffsetY: 0 },
+  { id: "snapchat", label: "Snapchat", source: SNAPCHAT_LOGO, imageScale: 1.35, imageOffsetY: 0 },
+  { id: "x", label: "X", source: X_LOGO, imageScale: 1.08, imageOffsetY: 0 },
 ];
 
 export function OnboardingStep3({
@@ -32,6 +37,7 @@ export function OnboardingStep3({
   progressTotal = 17,
 }: Props) {
   const pulse = useSharedValue(0);
+  const progressValue = Math.max(0, Math.min(1, (progressCurrent + 1) / progressTotal));
 
   useEffect(() => {
     // Gentle, non-distracting arrow pulse.
@@ -56,10 +62,21 @@ export function OnboardingStep3({
         <View style={styles.iconGrid}>
           {APPS.map((app) => (
             <View key={app.id} style={styles.appCard} accessibilityLabel={`${app.label} (locked)`}>
-              <View style={styles.appCardOverlay} pointerEvents="none" />
-              <Ionicons name={app.icon as any} size={28} color={app.brandColor} style={styles.appIcon} />
-              <View style={[styles.lockBadge, { borderColor: "rgba(196,162,247,0.18)" }]} pointerEvents="none">
-                <Ionicons name="lock-closed-outline" size={14} color={app.brandColor} />
+              <View style={styles.appIconClip} pointerEvents="none">
+                <Image
+                  source={app.source as ImageSourcePropType}
+                  style={[
+                    styles.appIconImage,
+                    {
+                      transform: [{ scale: app.imageScale }, { translateY: app.imageOffsetY }],
+                    },
+                  ]}
+                  resizeMode="cover"
+                />
+                <View style={styles.appCardOverlay} />
+              </View>
+              <View style={styles.lockBadge} pointerEvents="none">
+                <Ionicons name="lock-closed" size={12} color="rgba(235,225,255,0.85)" />
               </View>
             </View>
           ))}
@@ -86,7 +103,9 @@ export function OnboardingStep3({
         </Pressable>
 
         <View style={styles.progressWrap} pointerEvents="none">
-          <ProgressDots total={progressTotal} current={progressCurrent} variant="thin" />
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${progressValue * 100}%` }]} />
+          </View>
         </View>
       </View>
     </Animated.View>
@@ -98,72 +117,84 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: 8,
+    paddingTop: 16,
     paddingHorizontal: 22,
-    paddingBottom: 16,
+    paddingBottom: 30,
   },
   top: {
     alignItems: "center",
-    gap: 14,
+    gap: 10,
   },
   iconGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    gap: 12,
-    maxWidth: 240,
+    gap: 14,
+    width: 232,
   },
   appCard: {
-    width: 82,
-    height: 82,
-    borderRadius: 24,
-    backgroundColor: "rgba(45,26,74,0.55)",
+    width: 108,
+    height: 108,
+    borderRadius: 28,
+    backgroundColor: "rgba(45,26,74,0.42)",
     borderWidth: 1,
-    borderColor: "rgba(196,162,247,0.14)",
+    borderColor: "rgba(196,162,247,0.12)",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
+    padding: 10,
     overflow: "hidden",
+  },
+  appIconClip: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 20,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(16,8,28,0.62)",
   },
   appCardOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.18)",
+    backgroundColor: "rgba(4,2,12,0.26)",
   },
-  appIcon: {
-    opacity: 0.84,
+  appIconImage: {
+    width: "100%",
+    height: "100%",
+    opacity: 0.82,
   },
   lockBadge: {
     position: "absolute",
-    top: 7,
-    right: 7,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    top: 10,
+    right: 10,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.14)",
+    backgroundColor: "rgba(12,6,23,0.62)",
     borderWidth: 1,
-    opacity: 1,
+    borderColor: "rgba(196,162,247,0.2)",
   },
   copyWrap: {
     alignItems: "center",
     paddingHorizontal: 6,
-    gap: 6,
+    gap: 4,
   },
   line1: {
-    fontSize: 20,
+    fontSize: 19,
     fontFamily: "Inter_700Bold",
     color: "#f0eaff",
     textAlign: "center",
-    lineHeight: 27,
-    letterSpacing: -0.2,
+    lineHeight: 25,
+    letterSpacing: -0.15,
   },
   line2: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: "rgba(196,162,247,0.78)",
+    color: "rgba(196,162,247,0.72)",
     textAlign: "center",
-    lineHeight: 19,
+    lineHeight: 20,
   },
   arrowPress: {
     marginBottom: 0,
@@ -179,12 +210,25 @@ const styles = StyleSheet.create({
   bottom: {
     width: "100%",
     alignItems: "center",
-    gap: 10,
-    paddingBottom: 2,
+    gap: 7,
+    paddingBottom: 0,
   },
   progressWrap: {
     width: "100%",
     alignItems: "center",
+    marginTop: 4,
+  },
+  progressTrack: {
+    width: "78%",
+    height: 2,
+    borderRadius: 999,
+    backgroundColor: "rgba(196,162,247,0.14)",
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 999,
+    backgroundColor: "rgba(235,226,255,0.5)",
   },
 });
 
