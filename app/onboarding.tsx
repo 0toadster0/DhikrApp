@@ -82,6 +82,7 @@ const STRUGGLE_TIMES = [
 ];
 
 const TOTAL_STEPS = 17;
+const USER_NAME_MAX_LENGTH = 25;
 const JOURNEY_BOARD_DAYS = 60;
 const JOURNEY_COMPLETED_DAYS = 34;
 const JOURNEY_RECENT_STREAK_DAYS = 5;
@@ -96,9 +97,10 @@ const JOURNEY_CELL_OPACITY_RHYTHM = [0.74, 0.7, 0.78, 0.72, 0.76, 0.68];
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  const { state, updateProfile, setOnboardingStep } = useApp();
+  const { state, updateProfile, setOnboardingStep, isLoading } = useApp();
   const [step, setStep] = useState(0);
 
+  const [userNameInput, setUserNameInput] = useState("");
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [selectedApps, setSelectedApps] = useState<string[]>(["instagram", "tiktok", "twitter"]);
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
@@ -140,6 +142,12 @@ export default function OnboardingScreen() {
     );
   });
 
+  useEffect(() => {
+    if (isLoading || step !== 3) return;
+    const saved = state.profile.name?.trim() ?? "";
+    setUserNameInput(saved);
+  }, [isLoading, step, state.profile.name]);
+
   /** Image steps 0–1: intro line ~10% from top (9–11% band), respecting notch */
   const imageSlideIntroTop = Math.max(insets.top + 6, SCREEN_H * 0.105);
   /** 24px side padding, cap width ~84% so lines do not stretch edge-to-edge */
@@ -147,13 +155,18 @@ export default function OnboardingScreen() {
 
   const goNext = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (step === 3) {
+      const trimmed = userNameInput.trim();
+      if (!trimmed) return;
+      updateProfile({ name: trimmed });
+    }
     if (step < TOTAL_STEPS - 1) {
       setStep((s) => s + 1);
       setOnboardingStep(step + 1);
     } else {
       finishOnboarding();
     }
-  }, [step]);
+  }, [step, userNameInput, updateProfile, setOnboardingStep]);
 
   const goBack = useCallback(() => {
     if (step > 0) {
@@ -345,10 +358,15 @@ export default function OnboardingScreen() {
                 </LinearGradient>
               </View>
               <TextInput
+                value={userNameInput}
+                onChangeText={(t) => setUserNameInput(t.slice(0, USER_NAME_MAX_LENGTH))}
                 placeholder="Enter your name"
                 placeholderTextColor="rgba(196,162,247,0.55)"
-                editable={false}
                 style={styles.nameEntryInput}
+                autoCapitalize="words"
+                autoCorrect={false}
+                maxLength={USER_NAME_MAX_LENGTH}
+                returnKeyType="done"
               />
             </View>
           </CenteredStep>
@@ -634,17 +652,21 @@ export default function OnboardingScreen() {
           </CenteredStep>
         );
 
-      case 16:
+      case 16: {
+        const displayName = state.profile.name?.trim();
         return (
           <CenteredStep>
             <Ionicons name="moon" size={62} color="#F5C842" />
-            <Text style={styles.stepTitle}>You're ready.</Text>
+            <Text style={styles.stepTitle}>
+              {displayName ? `You're ready, ${displayName}.` : "You're ready."}
+            </Text>
             <Text style={styles.stepSub}>
               Even 30 seconds of remembrance can change the direction of your day.{"\n\n"}
               Let's begin.
             </Text>
           </CenteredStep>
         );
+      }
 
       default:
         return null;
@@ -654,6 +676,7 @@ export default function OnboardingScreen() {
   const isImageStep = step === 0 || step === 1;
   const isLastStep = step === TOTAL_STEPS - 1;
   const isPaywallStep = step === 15;
+  const nameStepContinueDisabled = step === 3 && userNameInput.trim().length === 0;
 
   const getNextLabel = () => {
     if (isLastStep) return "Begin";
@@ -718,6 +741,7 @@ export default function OnboardingScreen() {
                 onPress={goNext}
                 style={styles.nextBtn}
                 variant={isPaywallStep ? "gold" : "primary"}
+                disabled={nameStepContinueDisabled}
               />
               <View style={styles.bottomProgress}>
                 <ProgressDots total={TOTAL_STEPS} current={step} variant="thin" />

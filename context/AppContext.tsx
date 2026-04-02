@@ -65,6 +65,9 @@ const AppContext = createContext<AppContextType | null>(null);
 
 const STORAGE_KEY = "@dhikr_app_state";
 
+/** Standalone key for display name; also stored in persisted `profile.name`. */
+export const USER_NAME_STORAGE_KEY = "user_name";
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>(defaultState);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,9 +79,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const loadState = async () => {
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      const standaloneRaw = await AsyncStorage.getItem(USER_NAME_STORAGE_KEY);
+      const standaloneName = standaloneRaw?.trim() ?? "";
+
+      let merged: AppState = defaultState;
       if (stored) {
         const parsed = JSON.parse(stored);
-        setState({ ...defaultState, ...parsed });
+        merged = { ...defaultState, ...parsed };
+      }
+
+      if (standaloneName && !merged.profile.name?.trim()) {
+        merged = {
+          ...merged,
+          profile: { ...merged.profile, name: standaloneName },
+        };
+      }
+
+      if (stored || standaloneName) {
+        setState(merged);
       }
     } catch (e) {
       // ignore
@@ -102,6 +120,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         profile: { ...prev.profile, ...updates },
       };
       saveState(newState);
+      if (updates.name !== undefined) {
+        const n = updates.name ?? "";
+        if (n) {
+          AsyncStorage.setItem(USER_NAME_STORAGE_KEY, n).catch(() => {});
+        } else {
+          AsyncStorage.removeItem(USER_NAME_STORAGE_KEY).catch(() => {});
+        }
+      }
       return newState;
     });
   }, [saveState]);

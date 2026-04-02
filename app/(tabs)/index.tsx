@@ -72,6 +72,7 @@ export default function HomeScreen() {
                   : new Date().getHours() < 17
                   ? "Good afternoon"
                   : "Good evening"}
+                {state.profile.name?.trim() ? `, ${state.profile.name.trim()}` : ""}
               </Text>
               <Text style={styles.headerSub}>Choose faith first.</Text>
             </View>
