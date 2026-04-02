@@ -3,10 +3,14 @@ import { StyleSheet, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   runOnJS,
+  runOnUI,
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
   withSpring,
+  withTiming,
 } from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -21,6 +25,12 @@ interface Props {
   trackEndLabels?: { left: string; right: string };
   /** Called when the user starts/ends dragging — use to disable a parent ScrollView. */
   onDragActiveChange?: (active: boolean) => void;
+  /** Snap thumb to discrete steps (integers between min and max) while dragging. */
+  snapToSteps?: boolean;
+  /** Light selection haptic when the stepped value changes (native only). */
+  hapticOnStep?: boolean;
+  /** Subtle scale pulse on the thumb when the value steps. */
+  knobPulseOnStep?: boolean;
 }
 
 const TRACK_WIDTH = 280;
@@ -40,6 +50,9 @@ export function SliderInput({
   omitValueDisplay = false,
   trackEndLabels,
   onDragActiveChange,
+  snapToSteps = false,
+  hapticOnStep = false,
+  knobPulseOnStep = false,
 }: Props) {
   const colors = useColors();
   const { lo, hi, span } = useMemo(() => {
@@ -76,6 +89,7 @@ export function SliderInput({
   const fraction = span > 0 ? (clampNum(value, lo, hi) - lo) / span : 0;
   const thumbX = useSharedValue(fraction * trackSpan);
   const startX = useSharedValue(0);
+  const knobPulseScale = useSharedValue(1);
 
   useEffect(() => {
     if (trackSpan <= 0) return;
@@ -92,13 +106,29 @@ export function SliderInput({
     [onDragActiveChange]
   );
 
+  const pulseKnob = useCallback(() => {
+    runOnUI(() => {
+      "worklet";
+      knobPulseScale.value = withSequence(
+        withTiming(1.055, { duration: 95 }),
+        withTiming(1, { duration: 125 })
+      );
+    })();
+  }, []);
+
   /** runOnJS path only when stepped value changes (worklet compares first). */
   const emitStepped = useCallback(
     (v: number) => {
       lastEmitted.current = v;
       onChange(v);
+      if (hapticOnStep) {
+        void Haptics.selectionAsync();
+      }
+      if (knobPulseOnStep) {
+        pulseKnob();
+      }
     },
-    [onChange]
+    [hapticOnStep, knobPulseOnStep, onChange, pulseKnob]
   );
 
   const gesture = Gesture.Pan()
@@ -115,13 +145,18 @@ export function SliderInput({
       let tx = startX.value + e.translationX;
       if (tx < 0) tx = 0;
       else if (tx > ts) tx = ts;
-      thumbX.value = tx;
-      const frac = tx / ts;
+      const frac = ts > 0 ? tx / ts : 0;
       const raw = loSV.value + frac * rangeSV.value;
       const rounded = Math.round(raw);
       const loW = loSV.value;
       const hiW = hiSV.value;
       const stepped = rounded < loW ? loW : rounded > hiW ? hiW : rounded;
+      if (snapToSteps && rangeSV.value > 0) {
+        const snappedX = ((stepped - loW) / rangeSV.value) * ts;
+        thumbX.value = snappedX;
+      } else {
+        thumbX.value = tx;
+      }
       if (stepped !== lastEmittedSV.value) {
         lastEmittedSV.value = stepped;
         runOnJS(emitStepped)(stepped);
@@ -139,7 +174,12 @@ export function SliderInput({
     let x = thumbX.value;
     if (typeof x !== "number" || !Number.isFinite(x)) x = 0;
     const tx = x <= 0 ? 0 : x >= span ? span : x;
-    return { transform: [{ translateX: tx }] };
+    const s = knobPulseScale.value;
+    return {
+      transform: [{ translateX: tx }, { scale: s }],
+      shadowOpacity: 0.8 + Math.min(0.2, (s - 1) * 4),
+      shadowRadius: 8 + (s - 1) * 140,
+    };
   });
 
   const fillWidth = useAnimatedStyle(() => {

@@ -1,0 +1,214 @@
+import React from "react";
+import Animated, { FadeIn, type AnimatedStyle, type ScrollHandlerProcessed, type SharedValue } from "react-native-reanimated";
+import type { ViewStyle } from "react-native";
+
+import { AppLockStep } from "./AppLockStep";
+import { ScreenTimeReflectStep } from "./ScreenTimeReflectStep";
+import { OnboardingIntroImageStep } from "./pages/OnboardingIntroImageStep";
+import { OnboardingNameJourneyStep } from "./pages/OnboardingNameJourneyStep";
+import { OnboardingPhoneHoursDailyStep } from "./pages/OnboardingPhoneHoursDailyStep";
+import { OnboardingMoodBaselineStep } from "./pages/OnboardingMoodBaselineStep";
+import { OnboardingClosenessStep } from "./pages/OnboardingClosenessStep";
+import { OnboardingCheckinPreviewStep } from "./pages/OnboardingCheckinPreviewStep";
+import { OnboardingVerseMorningStep } from "./pages/OnboardingVerseMorningStep";
+import { OnboardingStreakPreviewStep } from "./pages/OnboardingStreakPreviewStep";
+import { OnboardingRemindersExplainerStep } from "./pages/OnboardingRemindersExplainerStep";
+import { OnboardingProtectionExplainerStep } from "./pages/OnboardingProtectionExplainerStep";
+import { OnboardingRecapStep } from "./pages/OnboardingRecapStep";
+import { OnboardingPaywallStep } from "./pages/OnboardingPaywallStep";
+import { OnboardingReadyStep } from "./pages/OnboardingReadyStep";
+import { OnboardingGoalsPickStep } from "./pages/OnboardingGoalsPickStep";
+import { OnboardingRelationshipGoalsStep } from "./pages/OnboardingRelationshipGoalsStep";
+import { TOTAL_STEPS } from "@/constants/onboarding/content";
+import { computeScreenTimeReflection } from "@/lib/onboarding/screenTimeReflection";
+
+import { styles } from "./onboardingStyles";
+
+export type OnboardingStepBodyProps = {
+  step: number;
+  colors: {
+    introEmphasis: string;
+    foreground: string;
+    mutedForeground: string;
+  };
+  imageSlideIntroTop: number;
+  imageSlideTextMaxW: number;
+  userNameInput: string;
+  onChangeUserName: (text: string) => void;
+  profileNameSaved: string | undefined;
+  onJourneyGridLayout: (width: number, height: number) => void;
+  journeyRows: number[][];
+  journeyCellSize: number;
+  journeyColumnGap: number;
+  journeyRowGap: number;
+  journeyGridContentHeight: number;
+  journeyGridContentWidth: number;
+  dailyPhoneHours: number;
+  onDailyPhoneHoursChange: (v: number) => void;
+  onPhoneHoursScrollLockChange: (locked: boolean) => void;
+  reflectAnimSession: number;
+  mood: number;
+  onMoodChange: (v: number) => void;
+  closeness: number;
+  onClosenessChange: (v: number) => void;
+  selectedGoals: string[];
+  onToggleGoal: (id: string) => void;
+  showGoalsPickHint: boolean;
+  selectedTimes: string[];
+  onToggleTime: (id: string) => void;
+  showRelationshipPickHint: boolean;
+  goalsPickListViewportMaxHeight: number;
+  goalsListViewportMaxHeight: number;
+  goalsScrollHandler: ScrollHandlerProcessed<Record<string, unknown>>;
+  goalsScrollViewportH: SharedValue<number>;
+  goalsScrollContentH: SharedValue<number>;
+  bumpGoalsScrollHint: () => void;
+  onFirstGoalsRowLayout: (e: { nativeEvent: { layout: { height: number } } }) => void;
+  goalsScrollRailStyle: AnimatedStyle<ViewStyle>;
+  goalsScrollThumbStyle: AnimatedStyle<ViewStyle>;
+  goalsMultiSelectShakeStyle: AnimatedStyle<ViewStyle>;
+  selectedAppsCount: number;
+  /** Primary advance action (image steps FAB, app-lock chevron, paywall “Restore”, footer Continue). */
+  onContinue: () => void;
+};
+
+export function OnboardingStepBody(p: OnboardingStepBodyProps) {
+  switch (p.step) {
+    case 0:
+      return (
+        <OnboardingIntroImageStep
+          variant={0}
+          introEmphasisColor={p.colors.introEmphasis}
+          imageSlideIntroTop={p.imageSlideIntroTop}
+          imageSlideTextMaxW={p.imageSlideTextMaxW}
+        />
+      );
+    case 1:
+      return (
+        <OnboardingIntroImageStep
+          variant={1}
+          introEmphasisColor={p.colors.introEmphasis}
+          imageSlideIntroTop={p.imageSlideIntroTop}
+          imageSlideTextMaxW={p.imageSlideTextMaxW}
+        />
+      );
+    case 2:
+      return <AppLockStep onContinue={p.onContinue} progressCurrent={p.step} progressTotal={TOTAL_STEPS} />;
+    case 3:
+      return (
+        <OnboardingNameJourneyStep
+          userNameInput={p.userNameInput}
+          onChangeUserName={p.onChangeUserName}
+          onJourneyGridLayout={p.onJourneyGridLayout}
+          journeyRows={p.journeyRows}
+          journeyCellSize={p.journeyCellSize}
+          journeyColumnGap={p.journeyColumnGap}
+          journeyRowGap={p.journeyRowGap}
+          journeyGridContentHeight={p.journeyGridContentHeight}
+          journeyGridContentWidth={p.journeyGridContentWidth}
+        />
+      );
+    case 4:
+      return (
+        <OnboardingPhoneHoursDailyStep
+          dailyPhoneHours={p.dailyPhoneHours}
+          onDailyPhoneHoursChange={p.onDailyPhoneHoursChange}
+          onPhoneHoursScrollLockChange={p.onPhoneHoursScrollLockChange}
+        />
+      );
+    case 5: {
+      const trimmedName = (p.profileNameSaved || p.userNameInput.trim()) || "";
+      const hasName = trimmedName.length > 0;
+      const {
+        hoursPerYear,
+        daysPerYear,
+        lifetimeDisplay,
+        lifetimeRounded,
+        lifetimeIsWhole,
+        quranDays,
+      } = computeScreenTimeReflection(p.dailyPhoneHours);
+
+      return (
+        <Animated.View entering={FadeIn.duration(400)} style={styles.screenTimeReflect}>
+          <ScreenTimeReflectStep
+            key={p.reflectAnimSession}
+            trimmedName={trimmedName}
+            hasName={hasName}
+            hoursPerYear={hoursPerYear}
+            daysPerYear={daysPerYear}
+            lifetimeDisplay={lifetimeDisplay}
+            lifetimeRounded={lifetimeRounded}
+            lifetimeIsWhole={lifetimeIsWhole}
+            quranDays={quranDays}
+            introEmphasis={p.colors.introEmphasis}
+            foreground={p.colors.foreground}
+          />
+        </Animated.View>
+      );
+    }
+    case 6:
+      return (
+        <OnboardingGoalsPickStep
+          showGoalsPickHint={p.showGoalsPickHint}
+          goalsMultiSelectShakeStyle={p.goalsMultiSelectShakeStyle}
+          goalsPickListViewportMaxHeight={p.goalsPickListViewportMaxHeight}
+          goalsScrollHandler={p.goalsScrollHandler}
+          goalsScrollViewportH={p.goalsScrollViewportH}
+          goalsScrollContentH={p.goalsScrollContentH}
+          bumpGoalsScrollHint={p.bumpGoalsScrollHint}
+          onFirstGoalsRowLayout={p.onFirstGoalsRowLayout}
+          selectedGoals={p.selectedGoals}
+          onToggleGoal={p.onToggleGoal}
+          goalsScrollRailStyle={p.goalsScrollRailStyle}
+          goalsScrollThumbStyle={p.goalsScrollThumbStyle}
+        />
+      );
+    case 7:
+      return (
+        <OnboardingRelationshipGoalsStep
+          showRelationshipPickHint={p.showRelationshipPickHint}
+          goalsMultiSelectShakeStyle={p.goalsMultiSelectShakeStyle}
+          goalsListViewportMaxHeight={p.goalsListViewportMaxHeight}
+          goalsScrollHandler={p.goalsScrollHandler}
+          goalsScrollViewportH={p.goalsScrollViewportH}
+          goalsScrollContentH={p.goalsScrollContentH}
+          bumpGoalsScrollHint={p.bumpGoalsScrollHint}
+          onFirstGoalsRowLayout={p.onFirstGoalsRowLayout}
+          selectedTimes={p.selectedTimes}
+          onToggleTime={p.onToggleTime}
+          goalsScrollRailStyle={p.goalsScrollRailStyle}
+          goalsScrollThumbStyle={p.goalsScrollThumbStyle}
+        />
+      );
+    case 8:
+      return (
+        <OnboardingMoodBaselineStep
+          mood={p.mood}
+          onMoodChange={p.onMoodChange}
+          onPhoneHoursScrollLockChange={p.onPhoneHoursScrollLockChange}
+        />
+      );
+    case 9:
+      return <OnboardingClosenessStep closeness={p.closeness} onClosenessChange={p.onClosenessChange} />;
+    case 10:
+      return <OnboardingCheckinPreviewStep />;
+    case 11:
+      return <OnboardingVerseMorningStep />;
+    case 12:
+      return <OnboardingStreakPreviewStep />;
+    case 13:
+      return <OnboardingRemindersExplainerStep />;
+    case 14:
+      return <OnboardingProtectionExplainerStep />;
+    case 15:
+      return <OnboardingRecapStep selectedGoals={p.selectedGoals} selectedAppsCount={p.selectedAppsCount} />;
+    case 16:
+      return (
+        <OnboardingPaywallStep onRestorePurchases={p.onContinue} mutedForeground={p.colors.mutedForeground} />
+      );
+    case 17:
+      return <OnboardingReadyStep displayName={p.profileNameSaved} />;
+    default:
+      return null;
+  }
+}
