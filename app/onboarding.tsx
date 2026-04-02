@@ -29,6 +29,7 @@ import { GradientBackground } from "@/components/GradientBackground";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { ProgressDots } from "@/components/ProgressDots";
 import { SliderInput } from "@/components/SliderInput";
+import { OnboardingStep3 } from "@/components/OnboardingStep3";
 import { mascots } from "@/constants/mascots";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
@@ -190,22 +191,7 @@ export default function OnboardingScreen() {
         );
 
       case 2:
-        return (
-          <CenteredStep>
-            <PremiumOnboardingArt />
-            <Text style={styles.stepTitle}>Before you open Instagram,{"\n"}pause first.</Text>
-            <Text style={styles.stepSub}>
-              Dhikr gently intercepts distracting apps{"\n"}and invites you to reconnect — in under 30 seconds.
-            </Text>
-            <View style={styles.pillRow}>
-              {["30 sec check-in", "No guilt", "Daily habit"].map((t) => (
-                <View key={t} style={styles.featurePill}>
-                  <Text style={styles.pillText}>{t}</Text>
-                </View>
-              ))}
-            </View>
-          </CenteredStep>
-        );
+        return <OnboardingStep3 onContinue={goNext} progressCurrent={step} progressTotal={TOTAL_STEPS} />;
 
       case 3:
         return (
@@ -540,6 +526,8 @@ export default function OnboardingScreen() {
     return "Continue";
   };
 
+  const showBack = !isImageStep && step > 0;
+
   return (
     <GradientBackground style={{ flex: 1 }}>
       <View
@@ -551,14 +539,26 @@ export default function OnboardingScreen() {
           },
         ]}
       >
-        {!isImageStep && (
-          <View style={styles.header}>
-            {step > 0 && (
+        {isImageStep ? (
+          <View style={[styles.headerImage, styles.headerAbsolute, { top: topPadding }]}>
+            {showBack ? (
               <Pressable onPress={goBack} style={styles.backBtn}>
                 <Ionicons name="chevron-back" size={24} color="rgba(196,162,247,0.7)" />
               </Pressable>
+            ) : (
+              <View style={styles.backBtnSmall} />
             )}
-            <ProgressDots total={TOTAL_STEPS} current={step} />
+            <View style={styles.backBtnSmall} />
+          </View>
+        ) : (
+          <View style={styles.header}>
+            {showBack ? (
+              <Pressable onPress={goBack} style={styles.backBtn}>
+                <Ionicons name="chevron-back" size={24} color="rgba(196,162,247,0.7)" />
+              </Pressable>
+            ) : (
+              <View style={styles.backBtn} />
+            )}
             <View style={styles.backBtn} />
           </View>
         )}
@@ -575,14 +575,19 @@ export default function OnboardingScreen() {
         </ScrollView>
 
         {!isImageStep ? (
-          <View style={styles.footer}>
-            <PrimaryButton
-              label={getNextLabel()}
-              onPress={goNext}
-              style={styles.nextBtn}
-              variant={isPaywallStep ? "gold" : "primary"}
-            />
-          </View>
+          step === 2 ? null : (
+            <View style={styles.footer}>
+              <PrimaryButton
+                label={getNextLabel()}
+                onPress={goNext}
+                style={styles.nextBtn}
+                variant={isPaywallStep ? "gold" : "primary"}
+              />
+              <View style={styles.bottomProgress}>
+                <ProgressDots total={TOTAL_STEPS} current={step} variant="thin" />
+              </View>
+            </View>
+          )
         ) : (
           <Pressable
             accessibilityRole="button"
@@ -599,6 +604,17 @@ export default function OnboardingScreen() {
           >
             <Ionicons name="arrow-forward" size={26} color={colors.primaryForeground} />
           </Pressable>
+        )}
+
+        {isImageStep && step !== 2 && (
+          <View
+            style={[
+              styles.imageBottomProgress,
+              { bottom: Platform.OS === "web" ? 12 : bottomPadding + 20 },
+            ]}
+          >
+            <ProgressDots total={TOTAL_STEPS} current={step} variant="thin" />
+          </View>
         )}
       </View>
     </GradientBackground>
@@ -708,9 +724,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
+  headerAbsolute: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    zIndex: 20,
+  },
+  headerImage: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 4,
+  },
   backBtn: {
     width: 36,
     height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backBtnSmall: {
+    width: 24,
+    height: 24,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1236,6 +1271,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 12,
     gap: 4,
+  },
+  bottomProgress: {
+    marginTop: 8,
+    alignItems: "center",
+  },
+  imageBottomProgress: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
   },
   nextBtn: {
     width: "100%",
