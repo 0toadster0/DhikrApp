@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { router } from "expo-router";
@@ -76,6 +77,16 @@ const STRUGGLE_TIMES = [
 ];
 
 const TOTAL_STEPS = 17;
+const JOURNEY_BOARD_DAYS = 60;
+const JOURNEY_COMPLETED_DAYS = 34;
+const JOURNEY_RECENT_STREAK_DAYS = 5;
+const JOURNEY_TODAY_INDEX = JOURNEY_COMPLETED_DAYS + JOURNEY_RECENT_STREAK_DAYS;
+const JOURNEY_GRID_COLUMNS = 8;
+const JOURNEY_GRID_ROWS = Math.ceil(JOURNEY_BOARD_DAYS / JOURNEY_GRID_COLUMNS);
+const JOURNEY_GRID_SIDE_PADDING = 12;
+const JOURNEY_GRID_VERTICAL_PADDING = 4;
+const JOURNEY_GRID_GAP = 3;
+const JOURNEY_CELL_OPACITY_RHYTHM = [0.74, 0.7, 0.78, 0.72, 0.76, 0.68];
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -88,9 +99,41 @@ export default function OnboardingScreen() {
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
   const [mood, setMood] = useState(5);
   const [closeness, setCloseness] = useState(5);
+  const [journeyGridSize, setJourneyGridSize] = useState({ width: 0, height: 0 });
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
+  const journeyRowCount = JOURNEY_GRID_ROWS;
+  const journeyTotalHorizontalPadding = JOURNEY_GRID_SIDE_PADDING * 2;
+  const journeyTotalVerticalPadding = JOURNEY_GRID_VERTICAL_PADDING * 2;
+  const journeyInnerWidth = Math.max(0, journeyGridSize.width - journeyTotalHorizontalPadding);
+  const journeyInnerHeight = Math.max(0, journeyGridSize.height - journeyTotalVerticalPadding);
+  const journeyColumnGap = JOURNEY_GRID_GAP;
+  const journeyRowGap = JOURNEY_GRID_GAP;
+  const journeyCellSize =
+    journeyGridSize.width > 0 && journeyGridSize.height > 0
+      ? Math.max(
+          16,
+          Math.min(
+            Math.floor(
+              (journeyInnerWidth - journeyColumnGap * (JOURNEY_GRID_COLUMNS - 1)) / JOURNEY_GRID_COLUMNS
+            ),
+            Math.floor(
+              (journeyInnerHeight - journeyRowGap * (journeyRowCount - 1)) / journeyRowCount
+            )
+          )
+        )
+      : 22;
+  const journeyGridContentHeight =
+    journeyCellSize * journeyRowCount + journeyRowGap * (journeyRowCount - 1);
+  const journeyGridContentWidth =
+    journeyCellSize * JOURNEY_GRID_COLUMNS + journeyColumnGap * (JOURNEY_GRID_COLUMNS - 1);
+  const journeyRows = Array.from({ length: journeyRowCount }, (_, rowIndex) => {
+    const start = rowIndex * JOURNEY_GRID_COLUMNS;
+    return Array.from({ length: JOURNEY_GRID_COLUMNS }, (_, colIndex) => start + colIndex).filter(
+      (dayIndex) => dayIndex < JOURNEY_BOARD_DAYS
+    );
+  });
 
   /** Image steps 0–1: intro line ~10% from top (9–11% band), respecting notch */
   const imageSlideIntroTop = Math.max(insets.top + 6, SCREEN_H * 0.105);
@@ -206,6 +249,109 @@ export default function OnboardingScreen() {
       case 3:
         return (
           <CenteredStep>
+            <View style={styles.nameEntryWrap}>
+              <Text style={styles.nameEntryTitle}>Ready to start your 60 day faith journey?</Text>
+              <Text style={styles.nameEntrySubtitle}>What should we call you?</Text>
+              <View style={styles.journeyHeroCard}>
+                <LinearGradient
+                  colors={["rgba(41,27,66,0.86)", "rgba(35,23,58,0.9)", "rgba(26,17,44,0.92)"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.journeyHeroGradient}
+                >
+                  <View
+                    style={styles.journeyBoardLayer}
+                    pointerEvents="none"
+                    onLayout={(event) => {
+                      const { width, height } = event.nativeEvent.layout;
+                      setJourneyGridSize((prev) =>
+                        prev.width === width && prev.height === height ? prev : { width, height }
+                      );
+                    }}
+                  >
+                    <View
+                      style={[
+                        styles.journeyBoardGrid,
+                        {
+                          rowGap: journeyRowGap,
+                          height: Math.round(journeyGridContentHeight),
+                          width: Math.round(journeyGridContentWidth),
+                        },
+                      ]}
+                    >
+                      {journeyRows.map((row, rowIndex) => (
+                        <View key={`journey-row-${rowIndex}`} style={[styles.journeyBoardRow, { columnGap: journeyColumnGap }]}>
+                          {row.map((i) => {
+                            const isCompleted = i < JOURNEY_COMPLETED_DAYS;
+                            const isRecentStreak =
+                              i >= JOURNEY_COMPLETED_DAYS && i < JOURNEY_TODAY_INDEX;
+                            const isToday = i === JOURNEY_TODAY_INDEX;
+                            const isPast = isCompleted || isRecentStreak;
+                            const opacityBeat = JOURNEY_CELL_OPACITY_RHYTHM[i % JOURNEY_CELL_OPACITY_RHYTHM.length];
+
+                            return (
+                              <View
+                                key={`cell-${i}`}
+                                style={[
+                                  styles.journeyDayCell,
+                                  {
+                                    width: journeyCellSize,
+                                    height: journeyCellSize,
+                                    borderRadius: Math.max(6, Math.round(journeyCellSize * 0.3)),
+                                    opacity: opacityBeat,
+                                  },
+                                  !isPast && !isToday && styles.journeyDayCellFuture,
+                                  isCompleted && styles.journeyDayCellCompleted,
+                                  isRecentStreak && styles.journeyDayCellRecent,
+                                  isToday && styles.journeyDayCellToday,
+                                ]}
+                              >
+                                {(isPast || isToday) && (
+                                  <Ionicons
+                                    name={isToday ? "star" : "checkmark"}
+                                    size={
+                                      isToday
+                                        ? Math.max(11, Math.round(journeyCellSize * 0.56))
+                                        : Math.max(10, Math.round(journeyCellSize * 0.48))
+                                    }
+                                    style={[
+                                      styles.journeyDayMark,
+                                      isRecentStreak && styles.journeyDayMarkRecent,
+                                      isToday && styles.journeyDayMarkToday,
+                                    ]}
+                                  />
+                                )}
+                              </View>
+                            );
+                          })}
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+
+                  <View style={styles.journeyBoardVeil} pointerEvents="none" />
+                  <LinearGradient
+                    pointerEvents="none"
+                    colors={["rgba(255,255,255,0.08)", "transparent", "rgba(10,7,18,0.12)"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.journeyCardEdge}
+                  />
+                </LinearGradient>
+              </View>
+              <TextInput
+                placeholder="Enter your name"
+                placeholderTextColor="rgba(196,162,247,0.55)"
+                editable={false}
+                style={styles.nameEntryInput}
+              />
+            </View>
+          </CenteredStep>
+        );
+
+      case 4:
+        return (
+          <CenteredStep>
             <Text style={[styles.stepTitle, { marginTop: 0 }]}>Choose what to{"\n"}protect your time from.</Text>
             <Text style={styles.stepSub}>These apps will ask for a short pause before opening.</Text>
             <View style={styles.appGrid}>
@@ -232,31 +378,6 @@ export default function OnboardingScreen() {
                   </Pressable>
                 );
               })}
-            </View>
-          </CenteredStep>
-        );
-
-      case 4:
-        return (
-          <CenteredStep>
-            <OnboardingMascot variant="tasbeeh" float />
-            <Text style={styles.stepTitle}>Your 30-second{"\n"}check-in.</Text>
-            <View style={styles.ritualCards}>
-              {[
-                { num: "1", title: "How am I feeling?", sub: "Quick 1–10 check-in" },
-                { num: "2", title: "How close to Allah?", sub: "Honest reflection" },
-                { num: "3", title: "Dhikr or Dua", sub: "Under 30 seconds" },
-              ].map((r) => (
-                <View key={r.num} style={styles.ritualCard}>
-                  <View style={styles.ritualNum}>
-                    <Text style={styles.ritualNumText}>{r.num}</Text>
-                  </View>
-                  <View style={styles.ritualInfo}>
-                    <Text style={styles.ritualTitle}>{r.title}</Text>
-                    <Text style={styles.ritualSub}>{r.sub}</Text>
-                  </View>
-                </View>
-              ))}
             </View>
           </CenteredStep>
         );
@@ -1161,40 +1282,133 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_500Medium",
   },
-  ritualCards: {
-    gap: 12,
+  nameEntryWrap: {
     width: "100%",
-  },
-  ritualCard: {
-    flexDirection: "row",
+    maxWidth: 340,
     alignItems: "center",
-    backgroundColor: "rgba(45,26,74,0.6)",
-    borderRadius: 16,
-    padding: 16,
-    gap: 14,
-    borderWidth: 1,
-    borderColor: "rgba(196,162,247,0.12)",
+    gap: 16,
+    transform: [{ translateY: -28 }],
   },
-  ritualNum: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(196,162,247,0.15)",
+  journeyHeroCard: {
+    width: "100%",
+    height: 320,
+    borderRadius: 36,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(223,204,255,0.08)",
+    backgroundColor: "rgba(34,23,55,0.84)",
+    marginTop: 12,
+    marginBottom: 12,
+    shadowColor: "#0B0717",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.2,
+    shadowRadius: 22,
+    elevation: 0,
+  },
+  journeyHeroGradient: {
+    flex: 1,
+    position: "relative",
+    overflow: "hidden",
+  },
+  journeyBoardLayer: {
+    ...StyleSheet.absoluteFillObject,
+    paddingHorizontal: JOURNEY_GRID_SIDE_PADDING,
+    paddingVertical: JOURNEY_GRID_VERTICAL_PADDING,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  journeyBoardGrid: {
+    alignSelf: "center",
+    justifyContent: "flex-start",
+  },
+  journeyBoardRow: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+  },
+  journeyDayCell: {
+    borderWidth: 1,
+    borderColor: "rgba(214,193,245,0.08)",
+    backgroundColor: "rgba(179,152,221,0.06)",
     alignItems: "center",
     justifyContent: "center",
   },
-  ritualNumText: {
-    color: "#C4A2F7",
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
+  journeyDayCellFuture: {
+    borderColor: "rgba(214,193,245,0.1)",
+    backgroundColor: "rgba(172,142,218,0.05)",
   },
-  ritualInfo: {
-    flex: 1,
+  journeyDayCellCompleted: {
+    borderColor: "rgba(0,0,0,0)",
+    backgroundColor: "rgba(186,158,232,0.18)",
+    shadowColor: "#C9B2EB",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.11,
+    shadowRadius: 5,
+    elevation: 0,
   },
-  ritualTitle: {
+  journeyDayCellRecent: {
+    borderColor: "rgba(0,0,0,0)",
+    backgroundColor: "rgba(203,174,244,0.24)",
+    shadowColor: "#C8ACEB",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.14,
+    shadowRadius: 7,
+    elevation: 0,
+  },
+  journeyDayCellToday: {
+    borderColor: "rgba(250,218,165,0.42)",
+    backgroundColor: "rgba(242,198,120,0.34)",
+    shadowColor: "#F5C26D",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 9,
+    elevation: 0,
+  },
+  journeyDayMark: {
+    color: "rgba(244,237,255,0.72)",
+  },
+  journeyDayMarkRecent: {
+    color: "rgba(248,240,255,0.82)",
+  },
+  journeyDayMarkToday: {
+    color: "rgba(255,238,204,0.96)",
+  },
+  journeyBoardVeil: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(14,9,25,0.06)",
+  },
+  journeyCardEdge: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  nameEntryTitle: {
     color: "#f0eaff",
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
+    fontSize: 30,
+    fontFamily: "Inter_500Medium",
+    textAlign: "center",
+    lineHeight: 35,
+    maxWidth: 320,
+    marginTop: 2,
+    transform: [{ translateY: -20 }],
+  },
+  nameEntrySubtitle: {
+    fontSize: 14,
+    color: "rgba(216,199,245,0.68)",
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    marginTop: -2,
+    marginBottom: 2,
+  },
+  nameEntryInput: {
+    width: "100%",
+    backgroundColor: "rgba(45,26,74,0.5)",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(196,162,247,0.18)",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: "#f0eaff",
+    fontSize: 16,
+    fontFamily: "Inter_400Regular",
+    marginTop: 8,
   },
   ritualSub: {
     color: "#9b80c8",
