@@ -4,12 +4,14 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  View,
   ViewStyle,
 } from "react-native";
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
+  withTiming,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
@@ -41,11 +43,11 @@ export function PrimaryButton({ label, onPress, style, loading, disabled, varian
   };
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.96, { damping: 15, stiffness: 300 });
+    scale.value = withTiming(0.98, { duration: 90, easing: Easing.out(Easing.cubic) });
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+    scale.value = withTiming(1, { duration: 160, easing: Easing.out(Easing.cubic) });
   };
 
   if (variant === "ghost") {
@@ -65,25 +67,38 @@ export function PrimaryButton({ label, onPress, style, loading, disabled, varian
     ? ["#E8B84B", "#F5C842"]
     : ["#9B6FE8", "#C4A2F7"];
 
+  const shadowStyle =
+    variant === "gold"
+      ? styles.shadowGold
+      : styles.shadowPrimary;
+
   return (
     <AnimatedPressable
-      style={[styles.wrapper, style, animatedStyle, (disabled || loading) && styles.disabled]}
+      style={[
+        styles.wrapper,
+        shadowStyle,
+        style,
+        animatedStyle,
+        (disabled || loading) && styles.disabled,
+      ]}
       onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
     >
-      <LinearGradient
-        colors={gradientColors}
-        style={styles.button}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-      >
-        {loading ? (
-          <ActivityIndicator color={variant === "gold" ? "#1a0a2e" : "#1a0a2e"} />
-        ) : (
-          <Text style={[styles.label, { color: "#1a0a2e" }]}>{label}</Text>
-        )}
-      </LinearGradient>
+      <View style={styles.innerClip}>
+        <LinearGradient
+          colors={gradientColors}
+          style={styles.button}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+        >
+          {loading ? (
+            <ActivityIndicator color={variant === "gold" ? "#1a0a2e" : "#1a0a2e"} />
+          ) : (
+            <Text style={[styles.label, { color: "#1a0a2e" }]}>{label}</Text>
+          )}
+        </LinearGradient>
+      </View>
     </AnimatedPressable>
   );
 }
@@ -91,7 +106,21 @@ export function PrimaryButton({ label, onPress, style, loading, disabled, varian
 const styles = StyleSheet.create({
   wrapper: {
     borderRadius: 28,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  innerClip: {
+    borderRadius: 28,
     overflow: "hidden",
+  },
+  shadowPrimary: {
+    shadowColor: "#B894F0",
+    shadowOpacity: 0.28,
+  },
+  shadowGold: {
+    shadowColor: "#E8B84B",
+    shadowOpacity: 0.22,
   },
   button: {
     paddingVertical: 17,

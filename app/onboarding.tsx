@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Dimensions,
   Image,
   Platform,
   Pressable,
+  ScrollView as RNScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -14,9 +15,12 @@ import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   Easing,
+  Extrapolation,
   FadeIn,
   FadeInDown,
+  interpolate,
   withDelay,
+  useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -35,6 +39,8 @@ import { SliderInput } from "@/components/SliderInput";
 import { mascots } from "@/constants/mascots";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
+
+const GoalsAnimatedScrollView = Animated.createAnimatedComponent(RNScrollView);
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -61,6 +67,12 @@ const GOALS = [
   { id: "discipline", label: "Become more disciplined" },
   { id: "grateful", label: "Practice more gratitude" },
 ];
+
+/** Goals step: show this many option rows before inner scroll; must match `goalList` gap. */
+const GOALS_LIST_VISIBLE_ROWS = 4;
+const GOALS_LIST_ROW_GAP = 10;
+/** Fallback row height (~goalsPickGradient padding + single line) until first `onLayout`. */
+const GOALS_ROW_FALLBACK_HEIGHT = 52;
 
 const STRUGGLE_TIMES = [
   { id: "morning", label: "Morning", sub: "Right after waking up" },
@@ -273,6 +285,157 @@ function ScreenTimeReflectStep({
   );
 }
 
+/** Compact mag mascot for goals step (screen 7): soft float + glow, same pattern as OnboardingMascot. */
+function GoalsReflectionMascot() {
+  const floatY = useSharedValue(0);
+  const glowScale = useSharedValue(1);
+  const glowOpacity = useSharedValue(0.52);
+
+  useEffect(() => {
+    floatY.value = withRepeat(
+      withSequence(
+        withTiming(-3.5, { duration: 2400, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 2400, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
+    );
+    glowScale.value = withRepeat(
+      withSequence(
+        withTiming(1.05, { duration: 2100, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1, { duration: 2100, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
+    );
+    glowOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0.74, { duration: 2100, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.48, { duration: 2100, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
+    );
+  }, [floatY, glowOpacity, glowScale]);
+
+  const floatStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: floatY.value }, { rotate: "6deg" }],
+  }));
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+    transform: [{ rotate: "6deg" }, { scale: glowScale.value }],
+  }));
+
+  return (
+    <View style={styles.goalsMascotStage} accessible={false}>
+      <Animated.View pointerEvents="none" style={[styles.goalsMascotGlow, glowStyle]} />
+      <Animated.View style={[styles.artFloatLayer, floatStyle]}>
+        <LinearGradient
+          colors={["rgba(255,255,255,0.08)", "rgba(196,162,247,0.03)"]}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
+          style={styles.goalsMascotSurface}
+        >
+          <Image source={mascots.mag} style={styles.goalsMascotImg} resizeMode="cover" />
+        </LinearGradient>
+      </Animated.View>
+    </View>
+  );
+}
+
+function GoalsSelectRow({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const colors = useColors();
+  const checkProgress = useSharedValue(selected ? 1 : 0);
+
+  useEffect(() => {
+    checkProgress.value = withTiming(selected ? 1 : 0, {
+      duration: 195,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [selected, checkProgress]);
+
+  const fillStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        scale: interpolate(checkProgress.value, [0, 1], [0.5, 1], Extrapolation.CLAMP),
+      },
+    ],
+    opacity: interpolate(checkProgress.value, [0, 1], [0, 1], Extrapolation.CLAMP),
+  }));
+
+  const markStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(checkProgress.value, [0, 0.4, 1], [0, 0, 1], Extrapolation.CLAMP),
+    transform: [
+      {
+        scale: interpolate(checkProgress.value, [0, 1], [0.82, 1], Extrapolation.CLAMP),
+      },
+    ],
+  }));
+
+  const gradientColors = selected
+    ? (["rgba(255,255,255,0.07)", "rgba(196,162,247,0.085)", "rgba(38,26,66,0.58)"] as const)
+    : (["rgba(255,255,255,0.05)", "rgba(255,255,255,0.02)", "rgba(45,26,74,0.5)"] as const);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.goalsPickPressable,
+        selected && styles.goalsPickPressableSelected,
+        {
+          opacity: pressed ? 0.92 : 1,
+          transform: [{ scale: pressed ? 0.986 : 1 }],
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.goalsPickOuter,
+          {
+            borderColor: selected ? "rgba(196,162,247,0.58)" : colors.border,
+            borderWidth: selected ? 1.5 : 1,
+          },
+        ]}
+      >
+        <LinearGradient
+          colors={[gradientColors[0], gradientColors[1], gradientColors[2]]}
+          locations={[0, 0.42, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.goalsPickGradient}
+        >
+          <View style={styles.goalsPickRow}>
+            <View style={styles.goalsCheckRing}>
+              <Animated.View
+                style={[styles.goalsCheckFill, fillStyle, { backgroundColor: colors.primary }]}
+              />
+              <Animated.View style={[styles.goalsCheckMarkWrap, markStyle]} pointerEvents="none">
+                <Ionicons name="checkmark" size={14} color="#1a0a2e" />
+              </Animated.View>
+            </View>
+            <Text
+              style={[
+                styles.goalLabel,
+                { color: selected ? colors.foreground : colors.mutedForeground },
+              ]}
+            >
+              {label}
+            </Text>
+          </View>
+        </LinearGradient>
+      </View>
+    </Pressable>
+  );
+}
+
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
@@ -290,6 +453,7 @@ export default function OnboardingScreen() {
   const [phoneHoursScrollLock, setPhoneHoursScrollLock] = useState(false);
   const [journeyGridSize, setJourneyGridSize] = useState({ width: 0, height: 0 });
   const [reflectAnimSession, setReflectAnimSession] = useState(0);
+  const [goalsOptionRowHeight, setGoalsOptionRowHeight] = useState(0);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
@@ -399,6 +563,92 @@ export default function OnboardingScreen() {
       prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
     );
   };
+
+  const onFirstGoalsRowLayout = useCallback((e: { nativeEvent: { layout: { height: number } } }) => {
+    const h = e.nativeEvent.layout.height;
+    if (h <= 0) return;
+    setGoalsOptionRowHeight((prev) => (Math.abs(h - prev) < 0.5 ? prev : h));
+  }, []);
+
+  const goalsListViewportMaxHeight = useMemo(() => {
+    const rowH = goalsOptionRowHeight > 0 ? goalsOptionRowHeight : GOALS_ROW_FALLBACK_HEIGHT;
+    return GOALS_LIST_VISIBLE_ROWS * rowH + (GOALS_LIST_VISIBLE_ROWS - 1) * GOALS_LIST_ROW_GAP;
+  }, [goalsOptionRowHeight]);
+
+  const goalsScrollY = useSharedValue(0);
+  const goalsScrollContentH = useSharedValue(0);
+  const goalsScrollViewportH = useSharedValue(0);
+  const goalsScrollHintOpacity = useSharedValue(0);
+  const goalsScrollHintIdleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const bumpGoalsScrollHint = useCallback(() => {
+    goalsScrollHintOpacity.value = withTiming(0.46, { duration: 140, easing: Easing.out(Easing.cubic) });
+    if (goalsScrollHintIdleRef.current) clearTimeout(goalsScrollHintIdleRef.current);
+    goalsScrollHintIdleRef.current = setTimeout(() => {
+      goalsScrollHintOpacity.value = withTiming(0.1, { duration: 780, easing: Easing.out(Easing.cubic) });
+    }, 2100);
+  }, [goalsScrollHintOpacity]);
+
+  useEffect(() => {
+    if (step !== 6) {
+      goalsScrollHintOpacity.value = withTiming(0, { duration: 160 });
+      goalsScrollY.value = 0;
+      if (goalsScrollHintIdleRef.current) {
+        clearTimeout(goalsScrollHintIdleRef.current);
+        goalsScrollHintIdleRef.current = null;
+      }
+      return;
+    }
+    goalsScrollHintOpacity.value = 0;
+    const tEnter = setTimeout(() => {
+      goalsScrollHintOpacity.value = withTiming(0.34, { duration: 440, easing: Easing.out(Easing.cubic) });
+    }, 240);
+    const tIdle = setTimeout(() => {
+      goalsScrollHintOpacity.value = withTiming(0.1, { duration: 820, easing: Easing.out(Easing.cubic) });
+    }, 3100);
+    return () => {
+      clearTimeout(tEnter);
+      clearTimeout(tIdle);
+      if (goalsScrollHintIdleRef.current) {
+        clearTimeout(goalsScrollHintIdleRef.current);
+        goalsScrollHintIdleRef.current = null;
+      }
+    };
+  }, [step]);
+
+  const goalsScrollHandler = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      goalsScrollY.value = e.contentOffset.y;
+    },
+  });
+
+  const goalsScrollRailStyle = useAnimatedStyle(() => {
+    const vh = goalsScrollViewportH.value;
+    const ch = goalsScrollContentH.value;
+    const scrollable = ch > vh + 2 && vh > 8;
+    return {
+      opacity: scrollable ? goalsScrollHintOpacity.value : 0,
+    };
+  });
+
+  const goalsScrollThumbStyle = useAnimatedStyle(() => {
+    const vh = goalsScrollViewportH.value;
+    const ch = goalsScrollContentH.value;
+    const sy = goalsScrollY.value;
+    const inset = 20;
+    const trackH = Math.max(0, vh - inset);
+    if (ch <= vh + 2 || trackH < 28) {
+      return { height: 0, transform: [{ translateY: 0 }] };
+    }
+    const thumbH = Math.min(trackH, Math.max(22, (vh / ch) * trackH));
+    const maxScroll = ch - vh;
+    const maxTravel = Math.max(0, trackH - thumbH);
+    const p = maxScroll > 0 ? Math.min(1, Math.max(0, sy / maxScroll)) : 0;
+    return {
+      height: thumbH,
+      transform: [{ translateY: p * maxTravel }],
+    };
+  });
 
   const renderStep = () => {
     switch (step) {
@@ -627,33 +877,63 @@ export default function OnboardingScreen() {
 
       case 6:
         return (
-          <CenteredStep>
-            <Text style={styles.stepTitle}>What are you{"\n"}hoping to change?</Text>
-            <Text style={styles.stepSub}>Choose all that resonate.</Text>
-            <View style={styles.goalList}>
-              {GOALS.map((g) => {
-                const sel = selectedGoals.includes(g.id);
-                return (
-                  <Pressable
-                    key={g.id}
-                    style={[
-                      styles.goalItem,
-                      sel && styles.goalItemSelected,
-                      { borderColor: sel ? colors.primary : colors.border },
-                    ]}
-                    onPress={() => toggleGoal(g.id)}
-                  >
-                    <View style={[styles.goalCheck, sel && { backgroundColor: colors.primary }]}>
-                      {sel && <Ionicons name="checkmark" size={14} color="#1a0a2e" />}
-                    </View>
-                    <Text style={[styles.goalLabel, { color: sel ? colors.foreground : colors.mutedForeground }]}>
-                      {g.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+          <Animated.View entering={FadeIn.duration(400)} style={styles.goalsReflectStep}>
+            <View style={styles.goalsReflectTitleBlock}>
+              <Text style={styles.goalsStepTitle}>What are you{"\n"}hoping to change?</Text>
             </View>
-          </CenteredStep>
+            <View style={styles.goalsReflectSubRow}>
+              <GoalsReflectionMascot />
+              <Text style={styles.goalsStepSub}>Choose all that resonate.</Text>
+            </View>
+            <View style={styles.goalsListScrollRow}>
+              <View style={styles.goalsListScrollListCol}>
+                <GoalsAnimatedScrollView
+                  style={[styles.goalsListScrollViewport, { maxHeight: goalsListViewportMaxHeight }]}
+                  contentContainerStyle={styles.goalsListScrollContent}
+                  showsVerticalScrollIndicator={false}
+                  bounces
+                  nestedScrollEnabled
+                  keyboardShouldPersistTaps="handled"
+                  scrollEventThrottle={16}
+                  onScroll={goalsScrollHandler}
+                  onLayout={(e) => {
+                    goalsScrollViewportH.value = e.nativeEvent.layout.height;
+                  }}
+                  onContentSizeChange={(_, h) => {
+                    goalsScrollContentH.value = h;
+                  }}
+                  onScrollBeginDrag={bumpGoalsScrollHint}
+                  onScrollEndDrag={bumpGoalsScrollHint}
+                  onMomentumScrollEnd={bumpGoalsScrollHint}
+                >
+                  {GOALS.map((g, index) => (
+                    <View
+                      key={g.id}
+                      style={styles.goalsListRowMeasureWrap}
+                      onLayout={index === 0 ? onFirstGoalsRowLayout : undefined}
+                    >
+                      <GoalsSelectRow
+                        label={g.label}
+                        selected={selectedGoals.includes(g.id)}
+                        onPress={() => toggleGoal(g.id)}
+                      />
+                    </View>
+                  ))}
+                </GoalsAnimatedScrollView>
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={["transparent", "rgba(26,10,46,0.42)"]}
+                  locations={[0.35, 1]}
+                  style={styles.goalsScrollBottomFade}
+                />
+              </View>
+              <Animated.View pointerEvents="none" style={[styles.goalsScrollRail, goalsScrollRailStyle]}>
+                <View style={styles.goalsScrollTrack}>
+                  <Animated.View style={[styles.goalsScrollThumb, goalsScrollThumbStyle]} />
+                </View>
+              </Animated.View>
+            </View>
+          </Animated.View>
         );
 
       case 7:
@@ -943,10 +1223,12 @@ export default function OnboardingScreen() {
         )}
 
         <ScrollView
+          style={styles.scrollFlex}
           scrollEnabled={!phoneHoursScrollLock}
           contentContainerStyle={[
             styles.scrollContent,
             isImageStep && styles.scrollContentFull,
+            step === 6 && styles.scrollContentGoalsStep,
           ]}
           showsVerticalScrollIndicator={false}
           bounces={false}
@@ -1308,10 +1590,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  scrollFlex: {
+    flex: 1,
+  },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingBottom: 24,
+  },
+  /** Goals step (screen 7): reserve space above fixed footer so list clears Continue + progress dots. */
+  scrollContentGoalsStep: {
+    paddingBottom: 140,
   },
   scrollContentFull: {
     paddingHorizontal: 0,
@@ -1756,6 +2045,196 @@ const styles = StyleSheet.create({
   goalList: {
     gap: 10,
     width: "100%",
+  },
+  /** List + chrome rail in a row: rail sits outside the card stack with a fixed gap. */
+  goalsListScrollRow: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    width: "100%",
+    marginTop: 32,
+    gap: 8,
+  },
+  goalsListScrollListCol: {
+    flex: 1,
+    minWidth: 0,
+    position: "relative",
+  },
+  goalsListScrollViewport: {
+    width: "100%",
+  },
+  /** Subtle cue that more goals exist below; scoped to list column only. */
+  goalsScrollBottomFade: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 44,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  /** Chrome column: same height as ScrollView via row stretch, no overlap with cards. */
+  goalsScrollRail: {
+    width: 3,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  goalsScrollTrack: {
+    flex: 1,
+    width: 3,
+    maxWidth: 3,
+    marginVertical: 10,
+    borderRadius: 999,
+    backgroundColor: "rgba(196,162,247,0.08)",
+    overflow: "hidden",
+  },
+  goalsScrollThumb: {
+    position: "absolute",
+    left: 0,
+    width: 3,
+    borderRadius: 999,
+    backgroundColor: "rgba(196,162,247,0.2)",
+  },
+  goalsListScrollContent: {
+    gap: GOALS_LIST_ROW_GAP,
+    paddingBottom: 20,
+  },
+  goalsListRowMeasureWrap: {
+    width: "100%",
+  },
+  /** Goals step (screen 7): top-weighted, intrinsic height (no flex:1) so ScrollView can scroll past the footer. */
+  goalsReflectStep: {
+    alignItems: "center",
+    justifyContent: "flex-start",
+    gap: 0,
+    paddingTop: 8,
+    paddingHorizontal: 4,
+    /** +12 vs 340: room for 8px gap + 3px rail outside list without narrowing cards. */
+    maxWidth: 352,
+    width: "100%",
+    alignSelf: "center",
+  },
+  goalsReflectTitleBlock: {
+    width: "100%",
+    alignItems: "center",
+    paddingTop: 10,
+  },
+  /** Mascot left of subtitle, vertically centered; whole row centered as a unit. */
+  goalsReflectSubRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    marginTop: 18,
+    marginBottom: 18,
+    gap: 10,
+  },
+  goalsStepTitle: {
+    fontSize: 29,
+    fontFamily: "Inter_700Bold",
+    color: "#f0eaff",
+    textAlign: "center",
+    lineHeight: 38,
+    letterSpacing: -0.35,
+    maxWidth: 278,
+    textShadowColor: "rgba(196,162,247,0.14)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 10,
+  },
+  goalsStepSub: {
+    fontSize: 15,
+    color: "rgba(196,162,247,0.5)",
+    fontFamily: "Inter_400Regular",
+    textAlign: "left",
+    lineHeight: 23,
+    paddingHorizontal: 0,
+    maxWidth: 248,
+    flexShrink: 1,
+  },
+  /** Matches OnboardingMascot: circular surface + glow; compact for header accent. */
+  goalsMascotStage: {
+    width: 58,
+    height: 58,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  goalsMascotGlow: {
+    position: "absolute",
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(196,162,247,0.18)",
+    shadowColor: "#F3D792",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
+    elevation: 0,
+    top: 5,
+    left: 5,
+  },
+  goalsMascotSurface: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(32,14,54,0.18)",
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 0,
+  },
+  goalsMascotImg: {
+    width: "110%",
+    height: "110%",
+  },
+  goalsPickPressable: {
+    width: "100%",
+    borderRadius: 14,
+  },
+  goalsPickPressableSelected: {
+    shadowColor: "#C4A2F7",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  goalsPickOuter: {
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  goalsPickGradient: {
+    paddingVertical: 15,
+    paddingHorizontal: 16,
+  },
+  goalsPickRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  goalsCheckRing: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: "rgba(196,162,247,0.38)",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  goalsCheckFill: {
+    position: "absolute",
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+  },
+  goalsCheckMarkWrap: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
   },
   goalItem: {
     flexDirection: "row",
