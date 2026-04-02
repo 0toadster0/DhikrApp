@@ -48,6 +48,11 @@ const APP_LOCK_APPS: Array<{ id: LockAppId; label: string }> = [
   { id: "x", label: "X" },
 ];
 
+/** Onboarding app-lock step: logo +45% vs legacy 64px; corners track clip size */
+const APP_LOCK_ICON_CLIP = Math.round(64 * 1.45);
+const APP_LOCK_ICON_CLIP_RADIUS = Math.round(18 * 1.45);
+const APP_LOCK_ICON_IMAGE = APP_LOCK_ICON_CLIP;
+
 const GOALS = [
   { id: "pray", label: "Pray more consistently" },
   { id: "time", label: "Waste less time" },
@@ -864,8 +869,17 @@ function AppLockStep({
                   style={[styles.appLockCard, cardFloatStyles[index]]}
                   accessibilityLabel={`${app.label} (locked)`}
                 >
-                  <View style={styles.appLockCardGlow} pointerEvents="none" />
-                  <NormalizedLockAppIcon id={app.id} />
+                  <View style={styles.appLockCardScaledShell} pointerEvents="none">
+                    <View style={styles.appLockCardGlow} pointerEvents="none" />
+                  </View>
+                  <View style={styles.appLockIconLayer} pointerEvents="none">
+                    <NormalizedLockAppIcon
+                      id={app.id}
+                      clipSize={APP_LOCK_ICON_CLIP}
+                      clipBorderRadius={APP_LOCK_ICON_CLIP_RADIUS}
+                      imageBaseSize={APP_LOCK_ICON_IMAGE}
+                    />
+                  </View>
                   <View style={styles.appLockLockBadge} pointerEvents="none">
                     <Ionicons name="lock-closed" size={15} color="rgba(235,225,255,0.9)" />
                   </View>
@@ -880,8 +894,17 @@ function AppLockStep({
                   style={[styles.appLockCard, cardFloatStyles[index + 2]]}
                   accessibilityLabel={`${app.label} (locked)`}
                 >
-                  <View style={styles.appLockCardGlow} pointerEvents="none" />
-                  <NormalizedLockAppIcon id={app.id} />
+                  <View style={styles.appLockCardScaledShell} pointerEvents="none">
+                    <View style={styles.appLockCardGlow} pointerEvents="none" />
+                  </View>
+                  <View style={styles.appLockIconLayer} pointerEvents="none">
+                    <NormalizedLockAppIcon
+                      id={app.id}
+                      clipSize={APP_LOCK_ICON_CLIP}
+                      clipBorderRadius={APP_LOCK_ICON_CLIP_RADIUS}
+                      imageBaseSize={APP_LOCK_ICON_IMAGE}
+                    />
+                  </View>
                   <View style={styles.appLockLockBadge} pointerEvents="none">
                     <Ionicons name="lock-closed" size={15} color="rgba(235,225,255,0.9)" />
                   </View>
@@ -1682,32 +1705,46 @@ const styles = StyleSheet.create({
   },
   contentStack: {
     alignItems: "center",
-    gap: 22,
+    gap: 38,
   },
   appLockIconGrid: {
     flexDirection: "column",
-    gap: 26,
+    gap: 74,
     alignItems: "center",
   },
   appLockIconRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 26,
+    gap: 74,
   },
   appLockCard: {
     width: 82,
     height: 82,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    overflow: "visible",
+  },
+  appLockCardScaledShell: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     borderRadius: 23,
     backgroundColor: "rgba(255,255,255,0.05)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
     alignItems: "center",
     justifyContent: "center",
-    position: "relative",
-    overflow: "visible",
+    transform: [{ scale: 1.3 }],
+  },
+  appLockIconLayer: {
+    zIndex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   appLockCardGlow: {
-    position: "absolute",
     width: 60,
     height: 60,
     borderRadius: 18,
@@ -1732,13 +1769,16 @@ const styles = StyleSheet.create({
   },
   appLockLockBadge: {
     position: "absolute",
-    top: 6,
-    right: 6,
+    zIndex: 2,
+    top: 4,
+    right: 4,
     alignItems: "center",
     justifyContent: "center",
-    padding: 3,
+    padding: 2,
     borderRadius: 999,
     backgroundColor: "rgba(0,0,0,0.4)",
+    transformOrigin: "right top",
+    transform: [{ scale: 1.35 }],
   },
   appLockCopyWrap: {
     alignItems: "center",
