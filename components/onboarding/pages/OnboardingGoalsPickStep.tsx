@@ -2,9 +2,10 @@ import React from "react";
 import { Text, View } from "react-native";
 import Animated, { FadeIn, type AnimatedStyle, type ScrollHandlerProcessed, type SharedValue } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
-import type { ViewStyle } from "react-native";
+import type { TextStyle, ViewStyle } from "react-native";
 
-import { GOALS } from "@/constants/onboarding/content";
+import { GOALS, type OnboardingPickOption } from "@/constants/onboarding/content";
+import type { MascotKey } from "@/constants/mascots";
 
 import { GoalsReflectionMascot } from "../GoalsReflectionMascot";
 import { GoalsSelectRow } from "../GoalsSelectRow";
@@ -24,6 +25,12 @@ export function OnboardingGoalsPickStep({
   onToggleGoal,
   goalsScrollRailStyle,
   goalsScrollThumbStyle,
+  options = GOALS,
+  titleLine1 = "What are you",
+  titleLine2 = "hoping to change?",
+  titleLine3,
+  titleStyle,
+  mascotKey = "mag",
 }: {
   showGoalsPickHint: boolean;
   goalsMultiSelectShakeStyle: AnimatedStyle<ViewStyle>;
@@ -37,14 +44,32 @@ export function OnboardingGoalsPickStep({
   onToggleGoal: (id: string) => void;
   goalsScrollRailStyle: AnimatedStyle<ViewStyle>;
   goalsScrollThumbStyle: AnimatedStyle<ViewStyle>;
+  options?: OnboardingPickOption[];
+  titleLine1?: string;
+  titleLine2?: string;
+  /** When set, title becomes three lines (line1 / line2 / line3) to control wrapping. */
+  titleLine3?: string;
+  /** Merged after `goalsStepTitle` (e.g. wider layout so manual lines don’t wrap again). */
+  titleStyle?: TextStyle;
+  mascotKey?: MascotKey;
 }) {
   return (
     <Animated.View entering={FadeIn.duration(400)} style={styles.goalsReflectStep}>
       <View style={styles.goalsReflectTitleBlock}>
-        <Text style={styles.goalsStepTitle}>What are you{"\n"}hoping to change?</Text>
+        <Text style={[styles.goalsStepTitle, titleStyle]}>
+          {titleLine1}
+          {"\n"}
+          {titleLine2}
+          {titleLine3 != null ? (
+            <>
+              {"\n"}
+              {titleLine3}
+            </>
+          ) : null}
+        </Text>
       </View>
       <View style={styles.goalsReflectSubRow}>
-        <GoalsReflectionMascot />
+        <GoalsReflectionMascot mascotKey={mascotKey} />
         <Text style={styles.goalsStepSub}>Choose all that resonate.</Text>
       </View>
       {showGoalsPickHint ? (
@@ -71,7 +96,7 @@ export function OnboardingGoalsPickStep({
             onScrollEndDrag={bumpGoalsScrollHint}
             onMomentumScrollEnd={bumpGoalsScrollHint}
           >
-            {GOALS.map((g, index) => (
+            {options.map((g, index) => (
               <View
                 key={g.id}
                 style={styles.goalsListRowMeasureWrap}

@@ -70,7 +70,7 @@ export default function OnboardingScreen() {
     profileDailyPhoneHours: state.profile.dailyPhoneHours,
     setDailyPhoneHours,
     setPhoneHoursScrollLock,
-    selectedGoalsLength: selectedGoals.length,
+    selectedGoals,
     selectedTimesLength: selectedTimes.length,
     setShowGoalsPickHint,
     setShowRelationshipPickHint,
@@ -129,7 +129,7 @@ export default function OnboardingScreen() {
           contentContainerStyle={[
             styles.scrollContent,
             isImageStep && styles.scrollContentFull,
-            (step === 6 || step === 7) && styles.scrollContentGoalsStep,
+            (step === 6 || step === 7 || step === 9) && styles.scrollContentGoalsStep,
             step === 8 && styles.scrollContentFrequencyStep,
           ]}
           showsVerticalScrollIndicator={false}

@@ -1,6 +1,8 @@
 export const ONBOARDING_IMAGE_1 = require("@/assets/mascot/onboarding1.png");
 export const ONBOARDING_IMAGE_2 = require("@/assets/mascot/onboarding2.png");
 
+export type OnboardingPickOption = { id: string; label: string };
+
 export const GOALS = [
   { id: "pray", label: "Pray more consistently" },
   { id: "time", label: "Waste less time" },
@@ -9,6 +11,20 @@ export const GOALS = [
   { id: "discipline", label: "Become more disciplined" },
   { id: "grateful", label: "Practice more gratitude" },
 ];
+
+/** Step 9: barriers / blockers (same pick UI as goals; IDs are disjoint from `GOALS`). */
+export const GOAL_BARRIERS: OnboardingPickOption[] = [
+  { id: "barrier_distract", label: "getting distracted too easily" },
+  { id: "barrier_unmotivated", label: "feeling unmotivated or inconsistent" },
+  { id: "barrier_overthink", label: "overthinking or feeling stuck" },
+  { id: "barrier_stress", label: "stress, anxiety, or mental noise" },
+  { id: "barrier_habits", label: "habits I can't seem to break" },
+  { id: "barrier_start", label: "not knowing where to start" },
+];
+
+export function hasBarrierPick(selected: string[]): boolean {
+  return GOAL_BARRIERS.some((b) => selected.includes(b.id));
+}
 
 export const STRUGGLE_TIMES = [
   { id: "trust_plan", label: "Trusting Allah's plan, even when life feels uncertain" },

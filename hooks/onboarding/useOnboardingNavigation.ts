@@ -6,7 +6,7 @@ import { useAnimatedStyle, useSharedValue, withSequence, withTiming } from "reac
 import type { ViewStyle } from "react-native";
 
 import type { UserProfile } from "@/context/AppContext";
-import { TOTAL_STEPS } from "@/constants/onboarding/content";
+import { hasBarrierPick, TOTAL_STEPS } from "@/constants/onboarding/content";
 
 export type OnboardingNavigationParams = {
   step: number;
@@ -81,7 +81,9 @@ export function useOnboardingNavigation({
   ]);
 
   const goNext = useCallback(() => {
-    if (step === 6 && selectedGoals.length === 0) {
+    const goalsPickBlocked =
+      (step === 6 && selectedGoals.length === 0) || (step === 9 && !hasBarrierPick(selectedGoals));
+    if (goalsPickBlocked) {
       setShowGoalsPickHint(true);
       multiSelectShakeX.value = withSequence(
         withTiming(7, { duration: 42 }),
@@ -128,7 +130,7 @@ export function useOnboardingNavigation({
     step,
     userNameInput,
     dailyPhoneHours,
-    selectedGoals.length,
+    selectedGoals,
     selectedTimes.length,
     updateProfile,
     setOnboardingStep,

@@ -10,12 +10,12 @@ import Animated, {
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 
-import { mascots } from "@/constants/mascots";
+import { mascots, type MascotKey } from "@/constants/mascots";
 
 import { styles } from "./onboardingStyles";
 
-/** Compact mag mascot for goals step (screen 7): soft float + glow, same pattern as OnboardingMascot. */
-export function GoalsReflectionMascot() {
+/** Compact mascot for goals pick steps: soft float + glow, same pattern as OnboardingMascot. */
+export function GoalsReflectionMascot({ mascotKey = "mag" }: { mascotKey?: MascotKey }) {
   const floatY = useSharedValue(0);
   const glowScale = useSharedValue(1);
   const glowOpacity = useSharedValue(0.52);
@@ -65,7 +65,7 @@ export function GoalsReflectionMascot() {
           end={{ x: 0.9, y: 1 }}
           style={styles.goalsMascotSurface}
         >
-          <Image source={mascots.mag} style={styles.goalsMascotImg} resizeMode="cover" />
+          <Image source={mascots[mascotKey]} style={styles.goalsMascotImg} resizeMode="cover" />
         </LinearGradient>
       </Animated.View>
     </View>

@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 
+import { hasBarrierPick } from "@/constants/onboarding/content";
+
 export type OnboardingSyncEffectsParams = {
   isLoading: boolean;
   step: number;
@@ -10,7 +12,7 @@ export type OnboardingSyncEffectsParams = {
   profileDailyPhoneHours: number;
   setDailyPhoneHours: (value: number) => void;
   setPhoneHoursScrollLock: (locked: boolean) => void;
-  selectedGoalsLength: number;
+  selectedGoals: string[];
   selectedTimesLength: number;
   setShowGoalsPickHint: (show: boolean) => void;
   setShowRelationshipPickHint: (show: boolean) => void;
@@ -25,7 +27,7 @@ export function useOnboardingSyncEffects({
   profileDailyPhoneHours,
   setDailyPhoneHours,
   setPhoneHoursScrollLock,
-  selectedGoalsLength,
+  selectedGoals,
   selectedTimesLength,
   setShowGoalsPickHint,
   setShowRelationshipPickHint,
@@ -52,13 +54,14 @@ export function useOnboardingSyncEffects({
   }, [step, setPhoneHoursScrollLock]);
 
   useEffect(() => {
-    if (step !== 6) setShowGoalsPickHint(false);
+    if (step !== 6 && step !== 9) setShowGoalsPickHint(false);
     if (step !== 7) setShowRelationshipPickHint(false);
   }, [step, setShowGoalsPickHint, setShowRelationshipPickHint]);
 
   useEffect(() => {
-    if (selectedGoalsLength > 0) setShowGoalsPickHint(false);
-  }, [selectedGoalsLength, setShowGoalsPickHint]);
+    if (step === 6 && selectedGoals.length > 0) setShowGoalsPickHint(false);
+    if (step === 9 && hasBarrierPick(selectedGoals)) setShowGoalsPickHint(false);
+  }, [step, selectedGoals, setShowGoalsPickHint]);
 
   useEffect(() => {
     if (selectedTimesLength > 0) setShowRelationshipPickHint(false);

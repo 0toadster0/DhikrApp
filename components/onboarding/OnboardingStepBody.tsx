@@ -8,7 +8,6 @@ import { OnboardingIntroImageStep } from "./pages/OnboardingIntroImageStep";
 import { OnboardingNameJourneyStep } from "./pages/OnboardingNameJourneyStep";
 import { OnboardingPhoneHoursDailyStep } from "./pages/OnboardingPhoneHoursDailyStep";
 import { OnboardingMoodBaselineStep } from "./pages/OnboardingMoodBaselineStep";
-import { OnboardingClosenessStep } from "./pages/OnboardingClosenessStep";
 import { OnboardingCheckinPreviewStep } from "./pages/OnboardingCheckinPreviewStep";
 import { OnboardingVerseMorningStep } from "./pages/OnboardingVerseMorningStep";
 import { OnboardingStreakPreviewStep } from "./pages/OnboardingStreakPreviewStep";
@@ -19,7 +18,7 @@ import { OnboardingPaywallStep } from "./pages/OnboardingPaywallStep";
 import { OnboardingReadyStep } from "./pages/OnboardingReadyStep";
 import { OnboardingGoalsPickStep } from "./pages/OnboardingGoalsPickStep";
 import { OnboardingRelationshipGoalsStep } from "./pages/OnboardingRelationshipGoalsStep";
-import { TOTAL_STEPS } from "@/constants/onboarding/content";
+import { GOAL_BARRIERS, TOTAL_STEPS } from "@/constants/onboarding/content";
 import { computeScreenTimeReflection } from "@/lib/onboarding/screenTimeReflection";
 
 import { styles } from "./onboardingStyles";
@@ -189,7 +188,28 @@ export function OnboardingStepBody(p: OnboardingStepBodyProps) {
         />
       );
     case 9:
-      return <OnboardingClosenessStep closeness={p.closeness} onClosenessChange={p.onClosenessChange} />;
+      return (
+        <OnboardingGoalsPickStep
+          showGoalsPickHint={p.showGoalsPickHint}
+          goalsMultiSelectShakeStyle={p.goalsMultiSelectShakeStyle}
+          goalsPickListViewportMaxHeight={p.goalsPickListViewportMaxHeight}
+          goalsScrollHandler={p.goalsScrollHandler}
+          goalsScrollViewportH={p.goalsScrollViewportH}
+          goalsScrollContentH={p.goalsScrollContentH}
+          bumpGoalsScrollHint={p.bumpGoalsScrollHint}
+          onFirstGoalsRowLayout={p.onFirstGoalsRowLayout}
+          selectedGoals={p.selectedGoals}
+          onToggleGoal={p.onToggleGoal}
+          goalsScrollRailStyle={p.goalsScrollRailStyle}
+          goalsScrollThumbStyle={p.goalsScrollThumbStyle}
+          options={GOAL_BARRIERS}
+          titleLine1="What do you think"
+          titleLine2="is stopping you from"
+          titleLine3="reaching your goals?"
+          titleStyle={styles.goalsStepTitleBarriers}
+          mascotKey="tasbeeh"
+        />
+      );
     case 10:
       return <OnboardingCheckinPreviewStep />;
     case 11:
