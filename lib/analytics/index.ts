@@ -138,12 +138,12 @@ const defaultContext = {
     Constants.expoConfig?.version ??
     null,
   build_number:
-    Application.nativeBuildVersion ??
-    String(
-      Constants.expoConfig?.ios?.buildNumber ??
-        Constants.expoConfig?.android?.versionCode ??
-        "",
-    ) ||
+    (Application.nativeBuildVersion ??
+      String(
+        Constants.expoConfig?.ios?.buildNumber ??
+          Constants.expoConfig?.android?.versionCode ??
+          "",
+      )) ||
     null,
 };
 

@@ -4,12 +4,13 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "dev": "EXPO_PACKAGER_PROXY_URL=https://$REPLIT_EXPO_DEV_DOMAIN EXPO_PUBLIC_DOMAIN=$REPLIT_DEV_DOMAIN EXPO_PUBLIC_REPL_ID=$REPL_ID REACT_NATIVE_PACKAGER_HOSTNAME=$REPLIT_DEV_DOMAIN pnpm exec expo start --localhost --port $PORT",
+    "start": "bash scripts/expo-dev.sh",
+    "dev": "bash scripts/expo-dev.sh",
     "build": "node scripts/build.js",
     "serve": "node server/serve.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "android": "expo run:android",
-    "ios": "expo run:ios"
+    "android": "bash scripts/with-nonreplit-expo-env.sh pnpm exec expo run:android",
+    "ios": "bash scripts/with-nonreplit-expo-env.sh pnpm exec expo run:ios"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -25,7 +26,7 @@
     "@ungap/structured-clone": "^1.3.0",
     "@workspace/api-client-react": "workspace:*",
     "babel-plugin-react-compiler": "^19.0.0-beta-e993439-20250117",
-    "expo": "~54.0.27",
+    "expo": "~54.0.33",
     "expo-blur": "~15.0.8",
     "expo-constants": "~18.0.11",
     "expo-font": "~14.0.10",
@@ -46,7 +47,7 @@
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
     "react-native-gesture-handler": "~2.28.0",
-    "react-native-keyboard-controller": "^1.20.6",
+    "react-native-keyboard-controller": "1.18.5",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
@@ -59,11 +60,12 @@
   },
   "dependencies": {
     "expo": "~54.0.33",
-    "expo-application": "^55.0.12",
+    "expo-application": "~7.0.8",
     "expo-dev-client": "~6.0.20",
-    "expo-device": "^55.0.12",
-    "expo-file-system": "^55.0.14",
-    "expo-localization": "^55.0.11",
+    "expo-device": "~8.0.10",
+    "expo-file-system": "~19.0.21",
+    "expo-localization": "~17.0.8",
+    "expo-notifications": "~0.32.16",
     "posthog-react-native": "^4.39.3",
     "react": "19.1.0",
     "react-native": "0.81.5"
