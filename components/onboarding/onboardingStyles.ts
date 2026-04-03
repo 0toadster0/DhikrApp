@@ -55,6 +55,17 @@ export const styles = StyleSheet.create({
   scrollContentFrequencyStep: {
     paddingBottom: 108,
   },
+  /** First dhikr demo (screen 13): keep helper + Continue visually one unit; still clears safe footer. */
+  scrollContentDhikrStep: {
+    paddingBottom: 8,
+  },
+  /** Dhikr step: tighter footer stack so Continue sits closer to scroll content. */
+  footerDhikrStep: {
+    paddingBottom: 10,
+  },
+  bottomProgressDhikr: {
+    marginTop: 4,
+  },
   scrollContentFull: {
     paddingHorizontal: 0,
     paddingBottom: 0,

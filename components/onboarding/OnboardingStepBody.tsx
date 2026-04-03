@@ -77,6 +77,8 @@ export type OnboardingStepBodyProps = {
   showSexHint: boolean;
   /** Primary advance action (image steps FAB, app-lock chevron, paywall “Restore”, footer Continue). */
   onContinue: () => void;
+  /** Step 13: first dhikr demo — footer Continue enables after 10 taps. */
+  onVerseMorningDhikrComplete: (complete: boolean) => void;
 };
 
 export function OnboardingStepBody(p: OnboardingStepBodyProps) {
@@ -243,7 +245,9 @@ export function OnboardingStepBody(p: OnboardingStepBodyProps) {
     case 12:
       return <OnboardingCheckinPreviewStep onContinue={p.onContinue} />;
     case 13:
-      return <OnboardingVerseMorningStep />;
+      return (
+        <OnboardingVerseMorningStep onDhikrCompleteChange={p.onVerseMorningDhikrComplete} />
+      );
     case 14:
       return <OnboardingStreakPreviewStep />;
     case 15:

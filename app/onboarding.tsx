@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -119,9 +120,17 @@ export default function OnboardingScreen() {
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
   const { imageSlideIntroTop, imageSlideTextMaxW } = getImageSlideLayoutMetrics(insets.top);
 
+  const [verseMorningDhikrComplete, setVerseMorningDhikrComplete] = useState(false);
+
+  useEffect(() => {
+    if (step === 13) setVerseMorningDhikrComplete(false);
+  }, [step]);
+
   const isImageStep = step === 0 || step === 1;
   const isPaywallStep = step === 18;
-  const continueDisabled = step === 4 && userNameInput.trim().length === 0;
+  const continueDisabled =
+    (step === 4 && userNameInput.trim().length === 0) ||
+    (step === 13 && !verseMorningDhikrComplete);
   const showBack = !isImageStep && step > 0;
   const profileNameSaved = state.profile.name?.trim();
 
@@ -152,6 +161,7 @@ export default function OnboardingScreen() {
             (step === 3 || step === 7 || step === 8 || step === 10 || step === 11) &&
               styles.scrollContentGoalsStep,
             step === 9 && styles.scrollContentFrequencyStep,
+            step === 13 && styles.scrollContentDhikrStep,
           ]}
           showsVerticalScrollIndicator={false}
           bounces={false}
@@ -207,6 +217,7 @@ export default function OnboardingScreen() {
             onSelectSex={setSex}
             showSexHint={showSexHint}
             onContinue={goNext}
+            onVerseMorningDhikrComplete={setVerseMorningDhikrComplete}
           />
         </ScrollView>
 
