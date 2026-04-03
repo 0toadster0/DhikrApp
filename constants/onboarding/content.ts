@@ -69,3 +69,9 @@ export const ONBOARDING_REMINDER_OPTIONS = [
   { icon: "moon-outline" as const, label: "Before sleep" },
   { icon: "phone-portrait-outline" as const, label: "When you're about to scroll" },
 ] as const;
+
+export const ONBOARDING_PROTECTION_OPTIONS = [
+  { icon: "hourglass-outline" as const, label: "Pause selected apps until check-in is complete" },
+  { icon: "options-outline" as const, label: "Adjust or remove protected apps any time" },
+  { icon: "lock-closed-outline" as const, label: "Everything stays private on your device" },
+] as const;

@@ -253,9 +253,9 @@ export function OnboardingStepBody(p: OnboardingStepBodyProps) {
     case 14:
       return <OnboardingStreakPreviewStep suppressRewardEntrance={p.suppressStreakRewardEntrance ?? false} />;
     case 15:
-      return <OnboardingRemindersExplainerStep />;
-    case 16:
       return <OnboardingProtectionExplainerStep />;
+    case 16:
+      return <OnboardingRemindersExplainerStep />;
     case 17:
       return <OnboardingRecapStep selectedGoals={p.selectedGoals} selectedAppsCount={p.selectedAppsCount} />;
     case 18:
