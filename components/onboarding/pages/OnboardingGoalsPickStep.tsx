@@ -29,6 +29,8 @@ export function OnboardingGoalsPickStep({
   titleLine1 = "What are you",
   titleLine2 = "hoping to change?",
   titleLine3,
+  titleLine3Emphasis,
+  introEmphasisColor,
   titleStyle,
   mascotKey = "mag",
 }: {
@@ -49,6 +51,9 @@ export function OnboardingGoalsPickStep({
   titleLine2?: string;
   /** When set, title becomes three lines (line1 / line2 / line3) to control wrapping. */
   titleLine3?: string;
+  /** When set with `introEmphasisColor`, third line renders `before` + emphasized + `after` instead of `titleLine3`. */
+  titleLine3Emphasis?: { before: string; emphasis: string; after: string };
+  introEmphasisColor?: string;
   /** Merged after `goalsStepTitle` (e.g. wider layout so manual lines don’t wrap again). */
   titleStyle?: TextStyle;
   mascotKey?: MascotKey;
@@ -60,7 +65,14 @@ export function OnboardingGoalsPickStep({
           {titleLine1}
           {"\n"}
           {titleLine2}
-          {titleLine3 != null ? (
+          {titleLine3Emphasis != null && introEmphasisColor != null ? (
+            <>
+              {"\n"}
+              {titleLine3Emphasis.before}
+              <Text style={{ color: introEmphasisColor }}>{titleLine3Emphasis.emphasis}</Text>
+              {titleLine3Emphasis.after}
+            </>
+          ) : titleLine3 != null ? (
             <>
               {"\n"}
               {titleLine3}

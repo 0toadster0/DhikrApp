@@ -12,7 +12,7 @@ export function PhoneHoursLayoutScreen({
   expandMiddleContent,
   children,
 }: {
-  title: string;
+  title: string | React.ReactNode;
   subtitle?: string;
   titleStyle?: StyleProp<TextStyle>;
   /** When true, middle column fills remaining height (e.g. frequency step hero + controls). */

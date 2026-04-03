@@ -12,6 +12,8 @@ export interface UserProfile {
   closenessBaseline: number;
   /** Age bracket from onboarding (e.g. `14_24`, `55_plus`). */
   ageRange?: string;
+  /** Sex from onboarding (`male`, `female`, `prefer_not`). */
+  sex?: string;
   onboardingComplete: boolean;
   notificationsEnabled: boolean;
 }

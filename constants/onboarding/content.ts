@@ -35,7 +35,7 @@ export const STRUGGLE_TIMES = [
   { id: "closer_daily", label: "Becoming someone who is closer to Allah in everyday life" },
 ];
 
-export const TOTAL_STEPS = 19;
+export const TOTAL_STEPS = 20;
 
 /** Onboarding age question (step 3); IDs stored in profile.ageRange. */
 export const ONBOARDING_AGE_RANGES = [
@@ -47,6 +47,14 @@ export const ONBOARDING_AGE_RANGES = [
 ] as const;
 
 export type OnboardingAgeRangeId = (typeof ONBOARDING_AGE_RANGES)[number]["id"];
+
+/** Onboarding sex question (step 11); IDs stored in profile.sex. */
+export const ONBOARDING_SEX_OPTIONS = [
+  { id: "male", label: "Male" },
+  { id: "female", label: "Female" },
+  { id: "prefer_not", label: "Prefer not to say" },
+] as const;
+
 export const USER_NAME_MAX_LENGTH = 25;
 
 export const ONBOARDING_STREAK_WEEKDAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"] as const;

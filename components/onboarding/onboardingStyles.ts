@@ -1187,9 +1187,23 @@ export const styles = StyleSheet.create({
   contentWrapper: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
+    /** Match `goalsReflectStep.paddingTop` so app-lock headline aligns with age step title. */
+    paddingTop: 8,
   },
   contentStack: {
+    alignItems: "center",
+    gap: 38,
+  },
+  /** App lock: center icon grid + subtitle in space below the pinned headline (original vertical rhythm). */
+  appLockIconsSubtitleCenter: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+    minHeight: 0,
+  },
+  appLockIconsSubtitleStack: {
     alignItems: "center",
     gap: 38,
   },
@@ -1279,6 +1293,7 @@ export const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 27,
     letterSpacing: -0.08,
+    maxWidth: 304,
   },
   appLockSubline: {
     fontSize: 13,

@@ -52,6 +52,10 @@ export default function OnboardingScreen() {
     setShowAgeRangeHint,
     ageRange,
     setAgeRange,
+    showSexHint,
+    setShowSexHint,
+    sex,
+    setSex,
   } = form;
 
   const {
@@ -82,6 +86,10 @@ export default function OnboardingScreen() {
     setShowRelationshipPickHint,
     ageRange,
     setShowAgeRangeHint,
+    profileSex: state.profile.sex,
+    setSex,
+    sex,
+    setShowSexHint,
   });
 
   const { goNext, goBack, toggleGoal, toggleTime, goalsMultiSelectShakeStyle } = useOnboardingNavigation({
@@ -89,6 +97,7 @@ export default function OnboardingScreen() {
     setStep,
     userNameInput,
     ageRange,
+    sex,
     selectedGoals,
     selectedTimes,
     dailyPhoneHours,
@@ -103,6 +112,7 @@ export default function OnboardingScreen() {
     setShowGoalsPickHint,
     setShowRelationshipPickHint,
     setShowAgeRangeHint,
+    setShowSexHint,
   });
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
@@ -110,7 +120,7 @@ export default function OnboardingScreen() {
   const { imageSlideIntroTop, imageSlideTextMaxW } = getImageSlideLayoutMetrics(insets.top);
 
   const isImageStep = step === 0 || step === 1;
-  const isPaywallStep = step === 17;
+  const isPaywallStep = step === 18;
   const continueDisabled = step === 4 && userNameInput.trim().length === 0;
   const showBack = !isImageStep && step > 0;
   const profileNameSaved = state.profile.name?.trim();
@@ -139,7 +149,8 @@ export default function OnboardingScreen() {
           contentContainerStyle={[
             styles.scrollContent,
             isImageStep && styles.scrollContentFull,
-            (step === 3 || step === 7 || step === 8 || step === 10) && styles.scrollContentGoalsStep,
+            (step === 3 || step === 7 || step === 8 || step === 10 || step === 11) &&
+              styles.scrollContentGoalsStep,
             step === 9 && styles.scrollContentFrequencyStep,
           ]}
           showsVerticalScrollIndicator={false}
@@ -192,6 +203,9 @@ export default function OnboardingScreen() {
             ageRange={ageRange}
             onSelectAgeRange={setAgeRange}
             showAgeRangeHint={showAgeRangeHint}
+            sex={sex}
+            onSelectSex={setSex}
+            showSexHint={showSexHint}
             onContinue={goNext}
           />
         </ScrollView>

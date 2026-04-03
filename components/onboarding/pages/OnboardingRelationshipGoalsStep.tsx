@@ -11,6 +11,7 @@ import { GoalsAnimatedScrollView } from "../shared/GoalsAnimatedScrollView";
 import { styles } from "../onboardingStyles";
 
 export function OnboardingRelationshipGoalsStep({
+  introEmphasisColor,
   showRelationshipPickHint,
   goalsMultiSelectShakeStyle,
   goalsListViewportMaxHeight,
@@ -24,6 +25,7 @@ export function OnboardingRelationshipGoalsStep({
   goalsScrollRailStyle,
   goalsScrollThumbStyle,
 }: {
+  introEmphasisColor: string;
   showRelationshipPickHint: boolean;
   goalsMultiSelectShakeStyle: AnimatedStyle<ViewStyle>;
   goalsListViewportMaxHeight: number;
@@ -41,7 +43,8 @@ export function OnboardingRelationshipGoalsStep({
     <Animated.View entering={FadeIn.duration(400)} style={styles.goalsReflectStep}>
       <View style={styles.goalsReflectTitleBlock}>
         <Text style={[styles.goalsStepTitle, styles.goalsRelationshipTitle]}>
-          What does a strong relationship with Allah look like to you?
+          What does a strong relationship with{" "}
+          <Text style={{ color: introEmphasisColor }}>Allah</Text> look like to you?
         </Text>
       </View>
       <View style={[styles.goalsReflectSubBlockCentered, styles.goalsReflectSubRelationship]}>

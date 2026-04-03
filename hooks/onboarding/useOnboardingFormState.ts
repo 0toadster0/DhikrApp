@@ -17,6 +17,8 @@ export function useOnboardingFormState() {
   const [showRelationshipPickHint, setShowRelationshipPickHint] = useState(false);
   const [showAgeRangeHint, setShowAgeRangeHint] = useState(false);
   const [ageRange, setAgeRange] = useState<string | null>(null);
+  const [showSexHint, setShowSexHint] = useState(false);
+  const [sex, setSex] = useState<string | null>(null);
 
   return {
     step,
@@ -49,5 +51,9 @@ export function useOnboardingFormState() {
     setShowAgeRangeHint,
     ageRange,
     setAgeRange,
+    showSexHint,
+    setShowSexHint,
+    sex,
+    setSex,
   };
 }

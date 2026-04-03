@@ -21,6 +21,10 @@ export type OnboardingSyncEffectsParams = {
   setShowRelationshipPickHint: (show: boolean) => void;
   ageRange: string | null;
   setShowAgeRangeHint: (show: boolean) => void;
+  profileSex: string | undefined;
+  setSex: (value: string | null) => void;
+  sex: string | null;
+  setShowSexHint: (show: boolean) => void;
 };
 
 /** Hydrate age / name, phone hours after load, scroll lock, and validation hints. */
@@ -40,6 +44,10 @@ export function useOnboardingSyncEffects({
   setShowRelationshipPickHint,
   ageRange,
   setShowAgeRangeHint,
+  profileSex,
+  setSex,
+  sex,
+  setShowSexHint,
 }: OnboardingSyncEffectsParams): void {
   useEffect(() => {
     if (isLoading || step !== 3) return;
@@ -52,6 +60,12 @@ export function useOnboardingSyncEffects({
     const saved = profileName?.trim() ?? "";
     setUserNameInput(saved);
   }, [isLoading, step, profileName, setUserNameInput]);
+
+  useEffect(() => {
+    if (isLoading || step !== 11) return;
+    const saved = profileSex?.trim();
+    if (saved) setSex(saved);
+  }, [isLoading, step, profileSex, setSex]);
 
   const profileDailyPhoneHoursRef = useRef(profileDailyPhoneHours);
   profileDailyPhoneHoursRef.current = profileDailyPhoneHours;
@@ -72,13 +86,15 @@ export function useOnboardingSyncEffects({
     if (step !== 3) setShowAgeRangeHint(false);
     if (step !== 7 && step !== 10) setShowGoalsPickHint(false);
     if (step !== 8) setShowRelationshipPickHint(false);
-  }, [step, setShowAgeRangeHint, setShowGoalsPickHint, setShowRelationshipPickHint]);
+    if (step !== 11) setShowSexHint(false);
+  }, [step, setShowAgeRangeHint, setShowGoalsPickHint, setShowRelationshipPickHint, setShowSexHint]);
 
   useEffect(() => {
     if (step === 3 && ageRange != null) setShowAgeRangeHint(false);
     if (step === 7 && selectedGoals.length > 0) setShowGoalsPickHint(false);
     if (step === 10 && hasBarrierPick(selectedGoals)) setShowGoalsPickHint(false);
-  }, [step, ageRange, selectedGoals, setShowAgeRangeHint, setShowGoalsPickHint]);
+    if (step === 11 && sex != null) setShowSexHint(false);
+  }, [step, ageRange, selectedGoals, sex, setShowAgeRangeHint, setShowGoalsPickHint, setShowSexHint]);
 
   useEffect(() => {
     if (selectedTimesLength > 0) setShowRelationshipPickHint(false);

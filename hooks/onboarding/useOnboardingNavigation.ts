@@ -13,6 +13,7 @@ export type OnboardingNavigationParams = {
   setStep: Dispatch<SetStateAction<number>>;
   userNameInput: string;
   ageRange: string | null;
+  sex: string | null;
   selectedGoals: string[];
   selectedTimes: string[];
   dailyPhoneHours: number;
@@ -27,6 +28,7 @@ export type OnboardingNavigationParams = {
   setShowGoalsPickHint: (show: boolean) => void;
   setShowRelationshipPickHint: (show: boolean) => void;
   setShowAgeRangeHint: (show: boolean) => void;
+  setShowSexHint: (show: boolean) => void;
 };
 
 export type OnboardingNavigation = {
@@ -42,6 +44,7 @@ export function useOnboardingNavigation({
   setStep,
   userNameInput,
   ageRange,
+  sex,
   selectedGoals,
   selectedTimes,
   dailyPhoneHours,
@@ -56,6 +59,7 @@ export function useOnboardingNavigation({
   setShowGoalsPickHint,
   setShowRelationshipPickHint,
   setShowAgeRangeHint,
+  setShowSexHint,
 }: OnboardingNavigationParams): OnboardingNavigation {
   const multiSelectShakeX = useSharedValue(0);
 
@@ -72,6 +76,7 @@ export function useOnboardingNavigation({
       moodBaseline: mood,
       closenessBaseline: closeness,
       ...(ageRange ? { ageRange } : {}),
+      ...(sex ? { sex } : {}),
       onboardingComplete: true,
     });
     router.replace("/(tabs)");
@@ -83,12 +88,26 @@ export function useOnboardingNavigation({
     mood,
     closeness,
     ageRange,
+    sex,
     updateProfile,
   ]);
 
   const goNext = useCallback(() => {
     if (step === 3 && !ageRange) {
       setShowAgeRangeHint(true);
+      multiSelectShakeX.value = withSequence(
+        withTiming(7, { duration: 42 }),
+        withTiming(-7, { duration: 42 }),
+        withTiming(5, { duration: 38 }),
+        withTiming(-5, { duration: 38 }),
+        withTiming(3, { duration: 34 }),
+        withTiming(0, { duration: 36 })
+      );
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      return;
+    }
+    if (step === 11 && !sex) {
+      setShowSexHint(true);
       multiSelectShakeX.value = withSequence(
         withTiming(7, { duration: 42 }),
         withTiming(-7, { duration: 42 }),
@@ -133,6 +152,9 @@ export function useOnboardingNavigation({
     if (step === 3) {
       updateProfile({ ageRange: ageRange! });
     }
+    if (step === 11) {
+      updateProfile({ sex: sex! });
+    }
     if (step === 4) {
       const trimmed = userNameInput.trim();
       if (!trimmed) return;
@@ -152,6 +174,7 @@ export function useOnboardingNavigation({
     step,
     userNameInput,
     ageRange,
+    sex,
     dailyPhoneHours,
     selectedGoals,
     selectedTimes.length,
@@ -162,6 +185,7 @@ export function useOnboardingNavigation({
     setShowGoalsPickHint,
     setShowRelationshipPickHint,
     setShowAgeRangeHint,
+    setShowSexHint,
     multiSelectShakeX,
     finishOnboarding,
   ]);

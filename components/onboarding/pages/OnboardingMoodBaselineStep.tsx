@@ -27,6 +27,46 @@ function dhikrFrequencyLabel(value: number): string {
   return "Every day";
 }
 
+function DhikrFrequencyHeading({
+  userName,
+  emphasisColor,
+}: {
+  userName: string;
+  emphasisColor: string;
+}) {
+  const accent = { color: emphasisColor };
+  const trimmedName = userName.trim();
+
+  if (trimmedName.length > 0) {
+    return [
+      <Text key="name" style={accent}>
+        {trimmedName}
+      </Text>,
+      <Text key="comma">, how often do you make </Text>,
+      <Text key="time" style={accent}>
+        time
+      </Text>,
+      <Text key="for"> for </Text>,
+      <Text key="dhikr">dhikr</Text>,
+      <Text key="or"> or </Text>,
+      <Text key="dua">dua</Text>,
+      <Text key="rest"> per week?</Text>,
+    ];
+  }
+
+  return [
+    <Text key="lead">How often do you make </Text>,
+    <Text key="time" style={accent}>
+      time
+    </Text>,
+    <Text key="for"> for </Text>,
+    <Text key="dhikr">dhikr</Text>,
+    <Text key="or"> or </Text>,
+    <Text key="dua">dua</Text>,
+    <Text key="rest"> per week?</Text>,
+  ];
+}
+
 const LABEL_SOFT_MS = 150;
 
 function DhikrFrequencyAnimatedLabel({ mood }: { mood: number }) {
@@ -92,14 +132,19 @@ export function OnboardingMoodBaselineStep({
   mood,
   onMoodChange,
   onPhoneHoursScrollLockChange,
+  userName,
+  emphasisColor,
 }: {
   mood: number;
   onMoodChange: (v: number) => void;
   onPhoneHoursScrollLockChange: (locked: boolean) => void;
+  /** Saved or in-progress name from the name step; used in the heading. */
+  userName: string;
+  emphasisColor: string;
 }) {
   return (
     <PhoneHoursLayoutScreen
-      title="How often do you make time for dhikr or dua per week?"
+      title={<DhikrFrequencyHeading userName={userName} emphasisColor={emphasisColor} />}
       titleStyle={styles.phoneHoursHeadingFrequency}
       expandMiddleContent
     >

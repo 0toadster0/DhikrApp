@@ -24,7 +24,7 @@ export function OnboardingCheckinPreviewStep() {
         </View>
         <View style={styles.previewCard}>
           <Ionicons name="sparkles" size={22} color="#F5C842" />
-          <Text style={styles.previewCardTitle}>Dhikr or Dua</Text>
+          <Text style={styles.previewCardTitle}>dhikr or dua</Text>
           <Text style={styles.previewCardSub}>Under 30 seconds</Text>
         </View>
       </View>

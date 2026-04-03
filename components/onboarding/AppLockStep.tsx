@@ -117,61 +117,71 @@ export function AppLockStep({
   return (
     <Animated.View entering={FadeIn.duration(420)} style={styles.appLockContainer}>
       <View style={styles.contentWrapper}>
-        <View style={styles.contentStack}>
-          <View style={styles.appLockIconGrid}>
-            <View style={styles.appLockIconRow}>
-              {APP_LOCK_APPS.slice(0, 2).map((app, index) => (
-                <Animated.View
-                  key={app.id}
-                  style={[styles.appLockCard, cardFloatStyles[index]]}
-                  accessibilityLabel={`${app.label} (locked)`}
-                >
-                  <View style={styles.appLockCardScaledShell} pointerEvents="none">
-                    <View style={styles.appLockCardGlow} pointerEvents="none" />
-                  </View>
-                  <View style={styles.appLockIconLayer} pointerEvents="none">
-                    <NormalizedLockAppIcon
-                      id={app.id}
-                      clipSize={APP_LOCK_ICON_CLIP}
-                      clipBorderRadius={APP_LOCK_ICON_CLIP_RADIUS}
-                      imageBaseSize={APP_LOCK_ICON_IMAGE}
-                    />
-                  </View>
-                  <View style={styles.appLockLockBadge} pointerEvents="none">
-                    <Ionicons name="lock-closed" size={15} color="rgba(235,225,255,0.9)" />
-                  </View>
-                </Animated.View>
-              ))}
+        <View style={styles.goalsReflectTitleBlock}>
+          <Text style={styles.appLockHeadline}>
+            {
+              "It's simple, we lock distracting apps until you do a quick dhikr or dua"
+            }
+          </Text>
+        </View>
+
+        <View style={styles.appLockIconsSubtitleCenter}>
+          <View style={styles.appLockIconsSubtitleStack}>
+            <View style={styles.appLockIconGrid}>
+              <View style={styles.appLockIconRow}>
+                {APP_LOCK_APPS.slice(0, 2).map((app, index) => (
+                  <Animated.View
+                    key={app.id}
+                    style={[styles.appLockCard, cardFloatStyles[index]]}
+                    accessibilityLabel={`${app.label} (locked)`}
+                  >
+                    <View style={styles.appLockCardScaledShell} pointerEvents="none">
+                      <View style={styles.appLockCardGlow} pointerEvents="none" />
+                    </View>
+                    <View style={styles.appLockIconLayer} pointerEvents="none">
+                      <NormalizedLockAppIcon
+                        id={app.id}
+                        clipSize={APP_LOCK_ICON_CLIP}
+                        clipBorderRadius={APP_LOCK_ICON_CLIP_RADIUS}
+                        imageBaseSize={APP_LOCK_ICON_IMAGE}
+                      />
+                    </View>
+                    <View style={styles.appLockLockBadge} pointerEvents="none">
+                      <Ionicons name="lock-closed" size={15} color="rgba(235,225,255,0.9)" />
+                    </View>
+                  </Animated.View>
+                ))}
+              </View>
+
+              <View style={styles.appLockIconRow}>
+                {APP_LOCK_APPS.slice(2, 4).map((app, index) => (
+                  <Animated.View
+                    key={app.id}
+                    style={[styles.appLockCard, cardFloatStyles[index + 2]]}
+                    accessibilityLabel={`${app.label} (locked)`}
+                  >
+                    <View style={styles.appLockCardScaledShell} pointerEvents="none">
+                      <View style={styles.appLockCardGlow} pointerEvents="none" />
+                    </View>
+                    <View style={styles.appLockIconLayer} pointerEvents="none">
+                      <NormalizedLockAppIcon
+                        id={app.id}
+                        clipSize={APP_LOCK_ICON_CLIP}
+                        clipBorderRadius={APP_LOCK_ICON_CLIP_RADIUS}
+                        imageBaseSize={APP_LOCK_ICON_IMAGE}
+                      />
+                    </View>
+                    <View style={styles.appLockLockBadge} pointerEvents="none">
+                      <Ionicons name="lock-closed" size={15} color="rgba(235,225,255,0.9)" />
+                    </View>
+                  </Animated.View>
+                ))}
+              </View>
             </View>
 
-            <View style={styles.appLockIconRow}>
-              {APP_LOCK_APPS.slice(2, 4).map((app, index) => (
-                <Animated.View
-                  key={app.id}
-                  style={[styles.appLockCard, cardFloatStyles[index + 2]]}
-                  accessibilityLabel={`${app.label} (locked)`}
-                >
-                  <View style={styles.appLockCardScaledShell} pointerEvents="none">
-                    <View style={styles.appLockCardGlow} pointerEvents="none" />
-                  </View>
-                  <View style={styles.appLockIconLayer} pointerEvents="none">
-                    <NormalizedLockAppIcon
-                      id={app.id}
-                      clipSize={APP_LOCK_ICON_CLIP}
-                      clipBorderRadius={APP_LOCK_ICON_CLIP_RADIUS}
-                      imageBaseSize={APP_LOCK_ICON_IMAGE}
-                    />
-                  </View>
-                  <View style={styles.appLockLockBadge} pointerEvents="none">
-                    <Ionicons name="lock-closed" size={15} color="rgba(235,225,255,0.9)" />
-                  </View>
-                </Animated.View>
-              ))}
+            <View style={styles.appLockCopyWrap}>
+              <Text style={styles.appLockSubline}>your choice, done in 30 seconds or less</Text>
             </View>
-          </View>
-
-          <View style={styles.appLockCopyWrap}>
-            <Text style={styles.appLockHeadline}>Lock distracting apps</Text>
           </View>
         </View>
       </View>

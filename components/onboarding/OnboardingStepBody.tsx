@@ -5,6 +5,7 @@ import type { ViewStyle } from "react-native";
 import { AppLockStep } from "./AppLockStep";
 import { ScreenTimeReflectStep } from "./ScreenTimeReflectStep";
 import { OnboardingAgeRangeStep } from "./pages/OnboardingAgeRangeStep";
+import { OnboardingSexStep } from "./pages/OnboardingSexStep";
 import { OnboardingIntroImageStep } from "./pages/OnboardingIntroImageStep";
 import { OnboardingNameJourneyStep } from "./pages/OnboardingNameJourneyStep";
 import { OnboardingPhoneHoursDailyStep } from "./pages/OnboardingPhoneHoursDailyStep";
@@ -71,6 +72,9 @@ export type OnboardingStepBodyProps = {
   ageRange: string | null;
   onSelectAgeRange: (value: string | null) => void;
   showAgeRangeHint: boolean;
+  sex: string | null;
+  onSelectSex: (value: string | null) => void;
+  showSexHint: boolean;
   /** Primary advance action (image steps FAB, app-lock chevron, paywall “Restore”, footer Continue). */
   onContinue: () => void;
 };
@@ -178,6 +182,7 @@ export function OnboardingStepBody(p: OnboardingStepBodyProps) {
     case 8:
       return (
         <OnboardingRelationshipGoalsStep
+          introEmphasisColor={p.colors.introEmphasis}
           showRelationshipPickHint={p.showRelationshipPickHint}
           goalsMultiSelectShakeStyle={p.goalsMultiSelectShakeStyle}
           goalsListViewportMaxHeight={p.goalsListViewportMaxHeight}
@@ -198,6 +203,8 @@ export function OnboardingStepBody(p: OnboardingStepBodyProps) {
           mood={p.mood}
           onMoodChange={p.onMoodChange}
           onPhoneHoursScrollLockChange={p.onPhoneHoursScrollLockChange}
+          userName={(p.profileNameSaved ?? p.userNameInput).trim()}
+          emphasisColor={p.colors.introEmphasis}
         />
       );
     case 10:
@@ -216,30 +223,40 @@ export function OnboardingStepBody(p: OnboardingStepBodyProps) {
           goalsScrollRailStyle={p.goalsScrollRailStyle}
           goalsScrollThumbStyle={p.goalsScrollThumbStyle}
           options={GOAL_BARRIERS}
+          introEmphasisColor={p.colors.introEmphasis}
           titleLine1="What do you think"
           titleLine2="is stopping you from"
-          titleLine3="reaching your goals?"
+          titleLine3Emphasis={{ before: "reaching your ", emphasis: "goals", after: "?" }}
           titleStyle={styles.goalsStepTitleBarriers}
           mascotKey="tasbeeh"
         />
       );
     case 11:
-      return <OnboardingCheckinPreviewStep />;
+      return (
+        <OnboardingSexStep
+          sex={p.sex}
+          onSelectSex={p.onSelectSex}
+          showSexHint={p.showSexHint}
+          goalsMultiSelectShakeStyle={p.goalsMultiSelectShakeStyle}
+        />
+      );
     case 12:
-      return <OnboardingVerseMorningStep />;
+      return <OnboardingCheckinPreviewStep />;
     case 13:
-      return <OnboardingStreakPreviewStep />;
+      return <OnboardingVerseMorningStep />;
     case 14:
-      return <OnboardingRemindersExplainerStep />;
+      return <OnboardingStreakPreviewStep />;
     case 15:
-      return <OnboardingProtectionExplainerStep />;
+      return <OnboardingRemindersExplainerStep />;
     case 16:
-      return <OnboardingRecapStep selectedGoals={p.selectedGoals} selectedAppsCount={p.selectedAppsCount} />;
+      return <OnboardingProtectionExplainerStep />;
     case 17:
+      return <OnboardingRecapStep selectedGoals={p.selectedGoals} selectedAppsCount={p.selectedAppsCount} />;
+    case 18:
       return (
         <OnboardingPaywallStep onRestorePurchases={p.onContinue} mutedForeground={p.colors.mutedForeground} />
       );
-    case 18:
+    case 19:
       return <OnboardingReadyStep displayName={p.profileNameSaved} />;
     default:
       return null;

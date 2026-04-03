@@ -13,11 +13,11 @@ const SEGMENT_COUNT = 5;
 
 function getSegmentIndex(step: number) {
   // Onboarding pages (conceptual):
-  // 1–2 Awareness, 3 Understanding, 4–9 Reflection, 10–12 Action, 13–17 Setup.
+  // 1–2 Awareness, 3 Understanding, 4–9 Reflection, 10–13 Action, 14–18 Setup.
   if (step <= 1) return 0;
   if (step === 2) return 1;
   if (step >= 3 && step <= 9) return 2;
-  if (step >= 10 && step <= 12) return 3;
+  if (step >= 10 && step <= 13) return 3;
   return 4;
 }
 
