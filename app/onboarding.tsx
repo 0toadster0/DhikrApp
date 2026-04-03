@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { NativeModules, Platform, View } from "react-native";
+import * as Notifications from "expo-notifications";
 import { ScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -18,6 +19,23 @@ import { useOnboardingFormState } from "@/hooks/onboarding/useOnboardingFormStat
 import { useOnboardingNavigation } from "@/hooks/onboarding/useOnboardingNavigation";
 import { useOnboardingSyncEffects } from "@/hooks/onboarding/useOnboardingSyncEffects";
 import { useColors } from "@/hooks/useColors";
+
+async function requestNotificationPermission() {
+  const { status } = await Notifications.requestPermissionsAsync();
+  return status;
+}
+
+async function scheduleTestNotification() {
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: "Don’t forget your dhikr 🤍",
+      body: "Take a moment to remember Allah.",
+    },
+    trigger: {
+      seconds: 12,
+    },
+  });
+}
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -117,6 +135,8 @@ export default function OnboardingScreen() {
   });
 
   const [suppressStreakRewardEntrance, setSuppressStreakRewardEntrance] = useState(false);
+  const [, setNotificationPermissionStatus] =
+    useState<Notifications.PermissionStatus | null>(null);
 
   const advanceFromDhikrDemo = useCallback(() => {
     setSuppressStreakRewardEntrance(true);
@@ -150,6 +170,23 @@ export default function OnboardingScreen() {
         } catch (e) {
           console.log("Error calling ScreenTimeModule:", e);
           console.log("ScreenTime authorization failed:", e);
+        }
+      }
+
+      if (step === 16) {
+        try {
+          const status = await requestNotificationPermission();
+          setNotificationPermissionStatus(status);
+          if (status === "granted") {
+            await scheduleTestNotification();
+            console.log("Test notification scheduled");
+            console.log("Notification permission result:", status);
+          } else {
+            console.log("Notification permission denied:", status);
+          }
+        } catch (e) {
+          setNotificationPermissionStatus("denied");
+          console.log("Notification permission request failed:", e);
         }
       }
 
