@@ -275,6 +275,28 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 4,
     maxWidth: 310,
   },
+  /** Check-in transition step (12): calm hero + minimal meta; full-width centering inside scroll. */
+  checkinTransitionRoot: {
+    flex: 1,
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  checkinTransitionMeta: {
+    marginTop: 8,
+    alignItems: "center",
+    gap: 14,
+  },
+  checkinTransitionReassurance: {
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    color: "rgba(244, 238, 255, 0.52)",
+    textAlign: "center",
+    letterSpacing: 0.15,
+    lineHeight: 22,
+    paddingHorizontal: 32,
+  },
   phoneHoursScreen: {
     flex: 1,
     width: "100%",

@@ -241,7 +241,7 @@ export function OnboardingStepBody(p: OnboardingStepBodyProps) {
         />
       );
     case 12:
-      return <OnboardingCheckinPreviewStep />;
+      return <OnboardingCheckinPreviewStep onContinue={p.onContinue} />;
     case 13:
       return <OnboardingVerseMorningStep />;
     case 14:

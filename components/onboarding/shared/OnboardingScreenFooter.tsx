@@ -20,7 +20,7 @@ export function OnboardingScreenFooter({
   isPaywallStep,
   continueDisabled,
 }: OnboardingScreenFooterProps) {
-  if (step === 2) return null;
+  if (step === 2 || step === 12) return null;
 
   return (
     <View style={styles.footer}>
