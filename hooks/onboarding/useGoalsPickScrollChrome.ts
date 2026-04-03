@@ -62,7 +62,7 @@ export function useGoalsPickScrollChrome(step: number): GoalsPickScrollChrome {
   }, [goalsScrollHintOpacity]);
 
   useEffect(() => {
-    if (step !== 6 && step !== 7 && step !== 9) {
+    if (step !== 7 && step !== 8 && step !== 10) {
       goalsScrollHintOpacity.value = withTiming(0, { duration: 160 });
       goalsScrollY.value = 0;
       if (goalsScrollHintIdleRef.current) {

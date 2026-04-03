@@ -10,6 +10,8 @@ export interface UserProfile {
   dailyPhoneHours: number;
   moodBaseline: number;
   closenessBaseline: number;
+  /** Age bracket from onboarding (e.g. `14_24`, `55_plus`). */
+  ageRange?: string;
   onboardingComplete: boolean;
   notificationsEnabled: boolean;
 }

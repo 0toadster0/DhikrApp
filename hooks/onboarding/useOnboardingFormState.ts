@@ -15,6 +15,8 @@ export function useOnboardingFormState() {
   const [goalsOptionRowHeight, setGoalsOptionRowHeight] = useState(0);
   const [showGoalsPickHint, setShowGoalsPickHint] = useState(false);
   const [showRelationshipPickHint, setShowRelationshipPickHint] = useState(false);
+  const [showAgeRangeHint, setShowAgeRangeHint] = useState(false);
+  const [ageRange, setAgeRange] = useState<string | null>(null);
 
   return {
     step,
@@ -43,5 +45,9 @@ export function useOnboardingFormState() {
     setShowGoalsPickHint,
     showRelationshipPickHint,
     setShowRelationshipPickHint,
+    showAgeRangeHint,
+    setShowAgeRangeHint,
+    ageRange,
+    setAgeRange,
   };
 }

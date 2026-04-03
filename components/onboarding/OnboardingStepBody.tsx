@@ -4,6 +4,7 @@ import type { ViewStyle } from "react-native";
 
 import { AppLockStep } from "./AppLockStep";
 import { ScreenTimeReflectStep } from "./ScreenTimeReflectStep";
+import { OnboardingAgeRangeStep } from "./pages/OnboardingAgeRangeStep";
 import { OnboardingIntroImageStep } from "./pages/OnboardingIntroImageStep";
 import { OnboardingNameJourneyStep } from "./pages/OnboardingNameJourneyStep";
 import { OnboardingPhoneHoursDailyStep } from "./pages/OnboardingPhoneHoursDailyStep";
@@ -67,6 +68,9 @@ export type OnboardingStepBodyProps = {
   goalsScrollThumbStyle: AnimatedStyle<ViewStyle>;
   goalsMultiSelectShakeStyle: AnimatedStyle<ViewStyle>;
   selectedAppsCount: number;
+  ageRange: string | null;
+  onSelectAgeRange: (value: string | null) => void;
+  showAgeRangeHint: boolean;
   /** Primary advance action (image steps FAB, app-lock chevron, paywall “Restore”, footer Continue). */
   onContinue: () => void;
 };
@@ -95,6 +99,15 @@ export function OnboardingStepBody(p: OnboardingStepBodyProps) {
       return <AppLockStep onContinue={p.onContinue} progressCurrent={p.step} progressTotal={TOTAL_STEPS} />;
     case 3:
       return (
+        <OnboardingAgeRangeStep
+          ageRange={p.ageRange}
+          onSelectAgeRange={p.onSelectAgeRange}
+          showAgeRangeHint={p.showAgeRangeHint}
+          goalsMultiSelectShakeStyle={p.goalsMultiSelectShakeStyle}
+        />
+      );
+    case 4:
+      return (
         <OnboardingNameJourneyStep
           userNameInput={p.userNameInput}
           onChangeUserName={p.onChangeUserName}
@@ -107,7 +120,7 @@ export function OnboardingStepBody(p: OnboardingStepBodyProps) {
           journeyGridContentWidth={p.journeyGridContentWidth}
         />
       );
-    case 4:
+    case 5:
       return (
         <OnboardingPhoneHoursDailyStep
           dailyPhoneHours={p.dailyPhoneHours}
@@ -115,7 +128,7 @@ export function OnboardingStepBody(p: OnboardingStepBodyProps) {
           onPhoneHoursScrollLockChange={p.onPhoneHoursScrollLockChange}
         />
       );
-    case 5: {
+    case 6: {
       const trimmedName = (p.profileNameSaved || p.userNameInput.trim()) || "";
       const hasName = trimmedName.length > 0;
       const {
@@ -145,7 +158,7 @@ export function OnboardingStepBody(p: OnboardingStepBodyProps) {
         </Animated.View>
       );
     }
-    case 6:
+    case 7:
       return (
         <OnboardingGoalsPickStep
           showGoalsPickHint={p.showGoalsPickHint}
@@ -162,7 +175,7 @@ export function OnboardingStepBody(p: OnboardingStepBodyProps) {
           goalsScrollThumbStyle={p.goalsScrollThumbStyle}
         />
       );
-    case 7:
+    case 8:
       return (
         <OnboardingRelationshipGoalsStep
           showRelationshipPickHint={p.showRelationshipPickHint}
@@ -179,7 +192,7 @@ export function OnboardingStepBody(p: OnboardingStepBodyProps) {
           goalsScrollThumbStyle={p.goalsScrollThumbStyle}
         />
       );
-    case 8:
+    case 9:
       return (
         <OnboardingMoodBaselineStep
           mood={p.mood}
@@ -187,7 +200,7 @@ export function OnboardingStepBody(p: OnboardingStepBodyProps) {
           onPhoneHoursScrollLockChange={p.onPhoneHoursScrollLockChange}
         />
       );
-    case 9:
+    case 10:
       return (
         <OnboardingGoalsPickStep
           showGoalsPickHint={p.showGoalsPickHint}
@@ -210,23 +223,23 @@ export function OnboardingStepBody(p: OnboardingStepBodyProps) {
           mascotKey="tasbeeh"
         />
       );
-    case 10:
-      return <OnboardingCheckinPreviewStep />;
     case 11:
-      return <OnboardingVerseMorningStep />;
+      return <OnboardingCheckinPreviewStep />;
     case 12:
-      return <OnboardingStreakPreviewStep />;
+      return <OnboardingVerseMorningStep />;
     case 13:
-      return <OnboardingRemindersExplainerStep />;
+      return <OnboardingStreakPreviewStep />;
     case 14:
-      return <OnboardingProtectionExplainerStep />;
+      return <OnboardingRemindersExplainerStep />;
     case 15:
-      return <OnboardingRecapStep selectedGoals={p.selectedGoals} selectedAppsCount={p.selectedAppsCount} />;
+      return <OnboardingProtectionExplainerStep />;
     case 16:
+      return <OnboardingRecapStep selectedGoals={p.selectedGoals} selectedAppsCount={p.selectedAppsCount} />;
+    case 17:
       return (
         <OnboardingPaywallStep onRestorePurchases={p.onContinue} mutedForeground={p.colors.mutedForeground} />
       );
-    case 17:
+    case 18:
       return <OnboardingReadyStep displayName={p.profileNameSaved} />;
     default:
       return null;

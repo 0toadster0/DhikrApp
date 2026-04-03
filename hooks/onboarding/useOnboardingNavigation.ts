@@ -12,6 +12,7 @@ export type OnboardingNavigationParams = {
   step: number;
   setStep: Dispatch<SetStateAction<number>>;
   userNameInput: string;
+  ageRange: string | null;
   selectedGoals: string[];
   selectedTimes: string[];
   dailyPhoneHours: number;
@@ -25,6 +26,7 @@ export type OnboardingNavigationParams = {
   setSelectedTimes: Dispatch<SetStateAction<string[]>>;
   setShowGoalsPickHint: (show: boolean) => void;
   setShowRelationshipPickHint: (show: boolean) => void;
+  setShowAgeRangeHint: (show: boolean) => void;
 };
 
 export type OnboardingNavigation = {
@@ -39,6 +41,7 @@ export function useOnboardingNavigation({
   step,
   setStep,
   userNameInput,
+  ageRange,
   selectedGoals,
   selectedTimes,
   dailyPhoneHours,
@@ -52,6 +55,7 @@ export function useOnboardingNavigation({
   setSelectedTimes,
   setShowGoalsPickHint,
   setShowRelationshipPickHint,
+  setShowAgeRangeHint,
 }: OnboardingNavigationParams): OnboardingNavigation {
   const multiSelectShakeX = useSharedValue(0);
 
@@ -67,6 +71,7 @@ export function useOnboardingNavigation({
       dailyPhoneHours,
       moodBaseline: mood,
       closenessBaseline: closeness,
+      ...(ageRange ? { ageRange } : {}),
       onboardingComplete: true,
     });
     router.replace("/(tabs)");
@@ -77,12 +82,26 @@ export function useOnboardingNavigation({
     dailyPhoneHours,
     mood,
     closeness,
+    ageRange,
     updateProfile,
   ]);
 
   const goNext = useCallback(() => {
+    if (step === 3 && !ageRange) {
+      setShowAgeRangeHint(true);
+      multiSelectShakeX.value = withSequence(
+        withTiming(7, { duration: 42 }),
+        withTiming(-7, { duration: 42 }),
+        withTiming(5, { duration: 38 }),
+        withTiming(-5, { duration: 38 }),
+        withTiming(3, { duration: 34 }),
+        withTiming(0, { duration: 36 })
+      );
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      return;
+    }
     const goalsPickBlocked =
-      (step === 6 && selectedGoals.length === 0) || (step === 9 && !hasBarrierPick(selectedGoals));
+      (step === 7 && selectedGoals.length === 0) || (step === 10 && !hasBarrierPick(selectedGoals));
     if (goalsPickBlocked) {
       setShowGoalsPickHint(true);
       multiSelectShakeX.value = withSequence(
@@ -96,7 +115,7 @@ export function useOnboardingNavigation({
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       return;
     }
-    if (step === 7 && selectedTimes.length === 0) {
+    if (step === 8 && selectedTimes.length === 0) {
       setShowRelationshipPickHint(true);
       multiSelectShakeX.value = withSequence(
         withTiming(7, { duration: 42 }),
@@ -112,11 +131,14 @@ export function useOnboardingNavigation({
 
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (step === 3) {
+      updateProfile({ ageRange: ageRange! });
+    }
+    if (step === 4) {
       const trimmed = userNameInput.trim();
       if (!trimmed) return;
       updateProfile({ name: trimmed });
     }
-    if (step === 4) {
+    if (step === 5) {
       updateProfile({ dailyPhoneHours });
       setReflectAnimSession((s) => s + 1);
     }
@@ -129,6 +151,7 @@ export function useOnboardingNavigation({
   }, [
     step,
     userNameInput,
+    ageRange,
     dailyPhoneHours,
     selectedGoals,
     selectedTimes.length,
@@ -138,6 +161,7 @@ export function useOnboardingNavigation({
     setReflectAnimSession,
     setShowGoalsPickHint,
     setShowRelationshipPickHint,
+    setShowAgeRangeHint,
     multiSelectShakeX,
     finishOnboarding,
   ]);

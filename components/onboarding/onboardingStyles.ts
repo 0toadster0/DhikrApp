@@ -235,6 +235,37 @@ export const styles = StyleSheet.create({
     marginTop: 4,
     maxWidth: 300,
   },
+  /** Age step: validation line (no subtitle row above — override goals hint’s negative top). */
+  ageRangeValidationHint: {
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  /** Age step: wraps option stack for horizontal shake; `marginTop` tuned in component when hint is visible. */
+  ageRangeShakeBlock: {
+    width: "100%",
+    alignItems: "center",
+    paddingTop: 28,
+  },
+  ageRangeStack: {
+    width: "100%",
+    maxWidth: 228,
+    alignSelf: "center",
+    gap: 10,
+  },
+  ageRangeOptionGradient: {
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ageRangeOptionLabel: {
+    fontSize: 17,
+    lineHeight: 24,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 0.06,
+    textAlign: "center",
+    width: "100%",
+  },
   stepSub: {
     fontSize: 15,
     color: "rgba(196,162,247,0.75)",

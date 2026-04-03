@@ -10,7 +10,7 @@ export type OnboardingScreenFooterProps = {
   nextLabel: string;
   onNext: () => void;
   isPaywallStep: boolean;
-  nameStepContinueDisabled: boolean;
+  continueDisabled: boolean;
 };
 
 export function OnboardingScreenFooter({
@@ -18,7 +18,7 @@ export function OnboardingScreenFooter({
   nextLabel,
   onNext,
   isPaywallStep,
-  nameStepContinueDisabled,
+  continueDisabled,
 }: OnboardingScreenFooterProps) {
   if (step === 2) return null;
 
@@ -29,7 +29,7 @@ export function OnboardingScreenFooter({
         onPress={onNext}
         style={styles.nextBtn}
         variant={isPaywallStep ? "gold" : "primary"}
-        disabled={nameStepContinueDisabled}
+        disabled={continueDisabled}
       />
       <View style={styles.bottomProgress}>
         <ProgressDots total={TOTAL_STEPS} current={step} variant="thin" />

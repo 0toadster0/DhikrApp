@@ -5,7 +5,10 @@ import { hasBarrierPick } from "@/constants/onboarding/content";
 export type OnboardingSyncEffectsParams = {
   isLoading: boolean;
   step: number;
-  /** `state.profile.name` — dependency for name hydration when entering step 3. */
+  /** `state.profile.ageRange` — hydrate when entering age step. */
+  profileAgeRange: string | undefined;
+  setAgeRange: (value: string | null) => void;
+  /** `state.profile.name` — dependency for name hydration when entering name step. */
   profileName: string | undefined;
   setUserNameInput: (value: string) => void;
   /** Current `state.profile.dailyPhoneHours`; only applied when `isLoading` clears (same as inline effect deps). */
@@ -16,12 +19,16 @@ export type OnboardingSyncEffectsParams = {
   selectedTimesLength: number;
   setShowGoalsPickHint: (show: boolean) => void;
   setShowRelationshipPickHint: (show: boolean) => void;
+  ageRange: string | null;
+  setShowAgeRangeHint: (show: boolean) => void;
 };
 
-/** Hydrate name on step 3, phone hours after load, scroll lock, and validation hints. */
+/** Hydrate age / name, phone hours after load, scroll lock, and validation hints. */
 export function useOnboardingSyncEffects({
   isLoading,
   step,
+  profileAgeRange,
+  setAgeRange,
   profileName,
   setUserNameInput,
   profileDailyPhoneHours,
@@ -31,9 +38,17 @@ export function useOnboardingSyncEffects({
   selectedTimesLength,
   setShowGoalsPickHint,
   setShowRelationshipPickHint,
+  ageRange,
+  setShowAgeRangeHint,
 }: OnboardingSyncEffectsParams): void {
   useEffect(() => {
     if (isLoading || step !== 3) return;
+    const saved = profileAgeRange?.trim();
+    if (saved) setAgeRange(saved);
+  }, [isLoading, step, profileAgeRange, setAgeRange]);
+
+  useEffect(() => {
+    if (isLoading || step !== 4) return;
     const saved = profileName?.trim() ?? "";
     setUserNameInput(saved);
   }, [isLoading, step, profileName, setUserNameInput]);
@@ -50,18 +65,20 @@ export function useOnboardingSyncEffects({
   }, [isLoading, setDailyPhoneHours]);
 
   useEffect(() => {
-    if (step !== 4 && step !== 8) setPhoneHoursScrollLock(false);
+    if (step !== 5 && step !== 9) setPhoneHoursScrollLock(false);
   }, [step, setPhoneHoursScrollLock]);
 
   useEffect(() => {
-    if (step !== 6 && step !== 9) setShowGoalsPickHint(false);
-    if (step !== 7) setShowRelationshipPickHint(false);
-  }, [step, setShowGoalsPickHint, setShowRelationshipPickHint]);
+    if (step !== 3) setShowAgeRangeHint(false);
+    if (step !== 7 && step !== 10) setShowGoalsPickHint(false);
+    if (step !== 8) setShowRelationshipPickHint(false);
+  }, [step, setShowAgeRangeHint, setShowGoalsPickHint, setShowRelationshipPickHint]);
 
   useEffect(() => {
-    if (step === 6 && selectedGoals.length > 0) setShowGoalsPickHint(false);
-    if (step === 9 && hasBarrierPick(selectedGoals)) setShowGoalsPickHint(false);
-  }, [step, selectedGoals, setShowGoalsPickHint]);
+    if (step === 3 && ageRange != null) setShowAgeRangeHint(false);
+    if (step === 7 && selectedGoals.length > 0) setShowGoalsPickHint(false);
+    if (step === 10 && hasBarrierPick(selectedGoals)) setShowGoalsPickHint(false);
+  }, [step, ageRange, selectedGoals, setShowAgeRangeHint, setShowGoalsPickHint]);
 
   useEffect(() => {
     if (selectedTimesLength > 0) setShowRelationshipPickHint(false);

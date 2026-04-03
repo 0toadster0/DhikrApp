@@ -48,6 +48,10 @@ export default function OnboardingScreen() {
     setShowGoalsPickHint,
     showRelationshipPickHint,
     setShowRelationshipPickHint,
+    showAgeRangeHint,
+    setShowAgeRangeHint,
+    ageRange,
+    setAgeRange,
   } = form;
 
   const {
@@ -65,6 +69,8 @@ export default function OnboardingScreen() {
   useOnboardingSyncEffects({
     isLoading,
     step,
+    profileAgeRange: state.profile.ageRange,
+    setAgeRange,
     profileName: state.profile.name,
     setUserNameInput,
     profileDailyPhoneHours: state.profile.dailyPhoneHours,
@@ -74,12 +80,15 @@ export default function OnboardingScreen() {
     selectedTimesLength: selectedTimes.length,
     setShowGoalsPickHint,
     setShowRelationshipPickHint,
+    ageRange,
+    setShowAgeRangeHint,
   });
 
   const { goNext, goBack, toggleGoal, toggleTime, goalsMultiSelectShakeStyle } = useOnboardingNavigation({
     step,
     setStep,
     userNameInput,
+    ageRange,
     selectedGoals,
     selectedTimes,
     dailyPhoneHours,
@@ -93,6 +102,7 @@ export default function OnboardingScreen() {
     setSelectedTimes,
     setShowGoalsPickHint,
     setShowRelationshipPickHint,
+    setShowAgeRangeHint,
   });
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
@@ -100,8 +110,8 @@ export default function OnboardingScreen() {
   const { imageSlideIntroTop, imageSlideTextMaxW } = getImageSlideLayoutMetrics(insets.top);
 
   const isImageStep = step === 0 || step === 1;
-  const isPaywallStep = step === 16;
-  const nameStepContinueDisabled = step === 3 && userNameInput.trim().length === 0;
+  const isPaywallStep = step === 17;
+  const continueDisabled = step === 4 && userNameInput.trim().length === 0;
   const showBack = !isImageStep && step > 0;
   const profileNameSaved = state.profile.name?.trim();
 
@@ -129,8 +139,8 @@ export default function OnboardingScreen() {
           contentContainerStyle={[
             styles.scrollContent,
             isImageStep && styles.scrollContentFull,
-            (step === 6 || step === 7 || step === 9) && styles.scrollContentGoalsStep,
-            step === 8 && styles.scrollContentFrequencyStep,
+            (step === 3 || step === 7 || step === 8 || step === 10) && styles.scrollContentGoalsStep,
+            step === 9 && styles.scrollContentFrequencyStep,
           ]}
           showsVerticalScrollIndicator={false}
           bounces={false}
@@ -179,6 +189,9 @@ export default function OnboardingScreen() {
             goalsScrollThumbStyle={goalsScroll.goalsScrollThumbStyle}
             goalsMultiSelectShakeStyle={goalsMultiSelectShakeStyle}
             selectedAppsCount={selectedApps.length}
+            ageRange={ageRange}
+            onSelectAgeRange={setAgeRange}
+            showAgeRangeHint={showAgeRangeHint}
             onContinue={goNext}
           />
         </ScrollView>
@@ -189,7 +202,7 @@ export default function OnboardingScreen() {
             nextLabel={getOnboardingNextButtonLabel(step)}
             onNext={goNext}
             isPaywallStep={isPaywallStep}
-            nameStepContinueDisabled={nameStepContinueDisabled}
+            continueDisabled={continueDisabled}
           />
         ) : (
           <OnboardingImageStepChrome
