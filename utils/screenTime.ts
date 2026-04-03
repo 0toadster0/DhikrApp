@@ -1,5 +1,8 @@
 import { NativeModules } from "react-native";
 
+console.log("NativeModules keys:", Object.keys(NativeModules));
+console.log("ScreenTimeModule =", NativeModules.ScreenTimeModule);
+
 type ScreenTimeNativeModule = {
   requestAuthorization: () => Promise<boolean>;
 };

@@ -1,10 +1,13 @@
 import { Redirect } from "expo-router";
 import React from "react";
 import { useApp } from "@/context/AppContext";
-import { View, ActivityIndicator } from "react-native";
+import { NativeModules, View, ActivityIndicator } from "react-native";
 
 export default function IndexScreen() {
   const { state, isLoading } = useApp();
+
+  console.log(Object.keys(NativeModules));
+  console.log("ScreenTimeModule =", NativeModules.ScreenTimeModule);
 
   if (isLoading) {
     return (

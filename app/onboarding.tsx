@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Platform, View } from "react-native";
+import { NativeModules, Platform, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -138,6 +138,26 @@ export default function OnboardingScreen() {
   const continueDisabled = step === 4 && userNameInput.trim().length === 0;
   const showBack = !isImageStep && step > 0;
   const profileNameSaved = state.profile.name?.trim();
+  const handleFooterNext = useCallback(() => {
+    const handleAllowPress = async () => {
+      if (step === 15) {
+        try {
+          const test = await NativeModules.ScreenTimeModule.ping();
+          console.log("PING RESULT:", test);
+          console.log("Calling ScreenTimeModule.requestAuthorization");
+          await NativeModules.ScreenTimeModule.requestAuthorization();
+          console.log("Finished calling requestAuthorization");
+        } catch (e) {
+          console.log("Error calling ScreenTimeModule:", e);
+          console.log("ScreenTime authorization failed:", e);
+        }
+      }
+
+      goNext();
+    };
+
+    void handleAllowPress();
+  }, [goNext, step]);
 
   return (
     <GradientBackground style={{ flex: 1 }}>
@@ -231,7 +251,7 @@ export default function OnboardingScreen() {
           <OnboardingScreenFooter
             step={step}
             nextLabel={getOnboardingNextButtonLabel(step)}
-            onNext={goNext}
+            onNext={handleFooterNext}
             isPaywallStep={isPaywallStep}
             continueDisabled={continueDisabled}
           />

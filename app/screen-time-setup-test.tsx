@@ -1,11 +1,20 @@
-import { useState } from "react";
-import { Button, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Button, NativeModules, Text, View } from "react-native";
 import { requestScreenTimePermission } from "@/utils/screenTime";
 
 type PermissionStatus = "unknown" | "granted" | "denied";
 
 export default function ScreenTimeSetupTest() {
   const [status, setStatus] = useState<PermissionStatus>("unknown");
+
+  useEffect(() => {
+    console.log("NativeModules keys:", Object.keys(NativeModules));
+    console.log("ScreenTimeModule:", NativeModules.ScreenTimeModule);
+    console.log(
+      "ScreenTimeModule methods:",
+      Object.keys(NativeModules.ScreenTimeModule ?? {})
+    );
+  }, []);
 
   const handleRequestAccess = async () => {
     try {

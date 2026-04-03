@@ -1,0 +1,9 @@
+packages:
+  - "."
+  - "packages/*"
+
+catalog:
+  "@tanstack/react-query": "^5.90.5"
+  react: "^19.1.0"
+  react-dom: "^19.1.0"
+  zod: "^4.1.11"
