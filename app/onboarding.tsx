@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Platform, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -116,21 +116,26 @@ export default function OnboardingScreen() {
     setShowSexHint,
   });
 
+  const [suppressStreakRewardEntrance, setSuppressStreakRewardEntrance] = useState(false);
+
+  const advanceFromDhikrDemo = useCallback(() => {
+    setSuppressStreakRewardEntrance(true);
+    goNext();
+  }, [goNext]);
+
+  useEffect(() => {
+    if (step !== 14) {
+      setSuppressStreakRewardEntrance(false);
+    }
+  }, [step]);
+
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
   const { imageSlideIntroTop, imageSlideTextMaxW } = getImageSlideLayoutMetrics(insets.top);
 
-  const [verseMorningDhikrComplete, setVerseMorningDhikrComplete] = useState(false);
-
-  useEffect(() => {
-    if (step === 13) setVerseMorningDhikrComplete(false);
-  }, [step]);
-
   const isImageStep = step === 0 || step === 1;
   const isPaywallStep = step === 18;
-  const continueDisabled =
-    (step === 4 && userNameInput.trim().length === 0) ||
-    (step === 13 && !verseMorningDhikrComplete);
+  const continueDisabled = step === 4 && userNameInput.trim().length === 0;
   const showBack = !isImageStep && step > 0;
   const profileNameSaved = state.profile.name?.trim();
 
@@ -217,7 +222,8 @@ export default function OnboardingScreen() {
             onSelectSex={setSex}
             showSexHint={showSexHint}
             onContinue={goNext}
-            onVerseMorningDhikrComplete={setVerseMorningDhikrComplete}
+            onAdvanceFromDhikrDemo={advanceFromDhikrDemo}
+            suppressStreakRewardEntrance={suppressStreakRewardEntrance}
           />
         </ScrollView>
 

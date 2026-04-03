@@ -2,6 +2,10 @@ import { StyleSheet } from "react-native";
 import { SCREEN_W, SCREEN_H } from "@/constants/onboarding/dimensions";
 import { GOALS_LIST_ROW_GAP } from "@/constants/onboarding/goalsList";
 import { JOURNEY_GRID_SIDE_PADDING, JOURNEY_GRID_VERTICAL_PADDING } from "@/constants/onboarding/journey";
+import {
+  ONBOARDING_STREAK_DAY_CELL_SIZE,
+  ONBOARDING_STREAK_DAY_ROW_GAP,
+} from "@/constants/onboarding/content";
 
 export const styles = StyleSheet.create({
   container: {
@@ -55,16 +59,18 @@ export const styles = StyleSheet.create({
   scrollContentFrequencyStep: {
     paddingBottom: 108,
   },
-  /** First dhikr demo (screen 13): keep helper + Continue visually one unit; still clears safe footer. */
+  /** First dhikr demo (screen 13): no Continue — content breathes above progress dots only. */
   scrollContentDhikrStep: {
-    paddingBottom: 8,
+    paddingBottom: 16,
   },
-  /** Dhikr step: tighter footer stack so Continue sits closer to scroll content. */
-  footerDhikrStep: {
-    paddingBottom: 10,
+  /** Dhikr step: footer is progress dots only; balanced inset from home indicator. */
+  footerDhikrProgressOnly: {
+    paddingTop: 6,
+    paddingBottom: 14,
+    gap: 0,
   },
-  bottomProgressDhikr: {
-    marginTop: 4,
+  bottomProgressDhikrSolo: {
+    marginTop: 0,
   },
   scrollContentFull: {
     paddingHorizontal: 0,
@@ -1074,26 +1080,70 @@ export const styles = StyleSheet.create({
   },
   streakPreview: {
     flexDirection: "row",
-    gap: 8,
+    gap: ONBOARDING_STREAK_DAY_ROW_GAP,
     alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    maxWidth: "100%",
   },
   streakDay: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: ONBOARDING_STREAK_DAY_CELL_SIZE,
+    height: ONBOARDING_STREAK_DAY_CELL_SIZE,
+    borderRadius: ONBOARDING_STREAK_DAY_CELL_SIZE / 2,
     backgroundColor: "rgba(45,26,74,0.6)",
     borderWidth: 1,
     borderColor: "rgba(196,162,247,0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
+  streakDayInactive: {
+    opacity: 0.38,
+  },
   streakDayActive: {
     backgroundColor: "#C4A2F7",
-    borderColor: "#C4A2F7",
+    borderColor: "rgba(245,200,66,0.45)",
+  },
+  streakDay1Wrap: {
+    shadowColor: "#C4A2F7",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55,
+    shadowRadius: 18,
+    elevation: 10,
+  },
+  streakRewardStack: {
+    position: "relative",
+    width: "100%",
+    alignItems: "center",
+    gap: 68,
+    paddingTop: 32,
+    paddingBottom: 16,
+  },
+  streakIconWrap: {
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 88,
+    height: 72,
+  },
+  streakSparkle: {
+    position: "absolute",
+    color: "rgba(245,200,66,0.55)",
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
   },
   streakDayLabel: {
-    fontSize: 13,
+    fontSize: 17,
     fontFamily: "Inter_600SemiBold",
+  },
+  streakDay1Inner: {
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1,
+  },
+  streakDayFire: {
+    fontSize: 13,
+    lineHeight: 16,
+    marginBottom: -2,
   },
   notifList: {
     gap: 12,

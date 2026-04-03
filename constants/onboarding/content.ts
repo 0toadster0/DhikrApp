@@ -59,6 +59,11 @@ export const USER_NAME_MAX_LENGTH = 25;
 
 export const ONBOARDING_STREAK_WEEKDAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"] as const;
 
+/** Streak preview row (steps 13–14): keep in sync with `onboardingStyles` streakDay / streakPreview. */
+export const ONBOARDING_STREAK_DAY_CELL_SIZE = 46;
+/** Space between day circles — tight but not touching (narrower row for small screens). */
+export const ONBOARDING_STREAK_DAY_ROW_GAP = 5;
+
 export const ONBOARDING_REMINDER_OPTIONS = [
   { icon: "sunny-outline" as const, label: "Morning nudge" },
   { icon: "moon-outline" as const, label: "Before sleep" },

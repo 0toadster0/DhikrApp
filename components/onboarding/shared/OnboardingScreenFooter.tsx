@@ -23,15 +23,17 @@ export function OnboardingScreenFooter({
   if (step === 2 || step === 12) return null;
 
   return (
-    <View style={[styles.footer, step === 13 && styles.footerDhikrStep]}>
-      <PrimaryButton
-        label={nextLabel}
-        onPress={onNext}
-        style={styles.nextBtn}
-        variant={isPaywallStep ? "gold" : "primary"}
-        disabled={continueDisabled}
-      />
-      <View style={[styles.bottomProgress, step === 13 && styles.bottomProgressDhikr]}>
+    <View style={[styles.footer, step === 13 && styles.footerDhikrProgressOnly]}>
+      {step !== 13 ? (
+        <PrimaryButton
+          label={nextLabel}
+          onPress={onNext}
+          style={styles.nextBtn}
+          variant={isPaywallStep ? "gold" : "primary"}
+          disabled={continueDisabled}
+        />
+      ) : null}
+      <View style={[styles.bottomProgress, step === 13 && styles.bottomProgressDhikrSolo]}>
         <ProgressDots total={TOTAL_STEPS} current={step} variant="thin" />
       </View>
     </View>

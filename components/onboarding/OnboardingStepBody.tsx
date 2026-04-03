@@ -75,10 +75,12 @@ export type OnboardingStepBodyProps = {
   sex: string | null;
   onSelectSex: (value: string | null) => void;
   showSexHint: boolean;
-  /** Primary advance action (image steps FAB, app-lock chevron, paywall “Restore”, footer Continue). */
+  /** Primary advance action (image steps FAB, app-lock chevron, paywall “Restore”, footer Continue, dhikr demo auto-advance). */
   onContinue: () => void;
-  /** Step 13: first dhikr demo — footer Continue enables after 10 taps. */
-  onVerseMorningDhikrComplete: (complete: boolean) => void;
+  /** Step 13 only: marks streak entrance suppressed on the following step before advancing. */
+  onAdvanceFromDhikrDemo?: () => void;
+  /** Step 14: skip streak reward entrance when arriving from dhikr handoff. */
+  suppressStreakRewardEntrance?: boolean;
 };
 
 export function OnboardingStepBody(p: OnboardingStepBodyProps) {
@@ -246,10 +248,10 @@ export function OnboardingStepBody(p: OnboardingStepBodyProps) {
       return <OnboardingCheckinPreviewStep onContinue={p.onContinue} />;
     case 13:
       return (
-        <OnboardingVerseMorningStep onDhikrCompleteChange={p.onVerseMorningDhikrComplete} />
+        <OnboardingVerseMorningStep onAdvance={p.onAdvanceFromDhikrDemo ?? p.onContinue} />
       );
     case 14:
-      return <OnboardingStreakPreviewStep />;
+      return <OnboardingStreakPreviewStep suppressRewardEntrance={p.suppressStreakRewardEntrance ?? false} />;
     case 15:
       return <OnboardingRemindersExplainerStep />;
     case 16:

@@ -7,5 +7,6 @@ export function getOnboardingNextButtonLabel(step: number): string {
   if (isLastStep) return "Begin";
   if (isPaywallStep) return "Start Free Trial";
   if (step === 15 || step === 16) return "Allow";
+  if (step === 14) return "Keep going";
   return "Continue";
 }
