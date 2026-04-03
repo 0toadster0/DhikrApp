@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ONBOARDING_VARIANTS, setUserProperties } from "@/lib/analytics";
 
 export interface UserProfile {
   name?: string;
@@ -82,6 +83,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     loadState();
   }, []);
+
+  useEffect(() => {
+    setUserProperties({
+      onboarding_complete: state.profile.onboardingComplete,
+      notifications_enabled: state.profile.notificationsEnabled,
+      is_premium: state.isPremium,
+      acquisition_source: null,
+      onboarding_variant: ONBOARDING_VARIANTS[0],
+    });
+  }, [
+    state.profile.onboardingComplete,
+    state.profile.notificationsEnabled,
+    state.isPremium,
+  ]);
 
   const loadState = async () => {
     try {

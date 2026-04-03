@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Platform,
   Pressable,
@@ -16,6 +16,7 @@ import * as Haptics from "expo-haptics";
 import { GradientBackground } from "@/components/GradientBackground";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
+import { capture, screen } from "@/lib/analytics";
 
 const ALL_APPS = [
   { id: "instagram", label: "Instagram", icon: "logo-instagram" as const },
@@ -39,6 +40,7 @@ export default function ProtectionScreen() {
       ? state.profile.appsToBlock
       : ["instagram", "tiktok", "twitter"]
   );
+  const initialBlockedRef = useRef<string[]>(blocked);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom + 84;
@@ -51,6 +53,25 @@ export default function ProtectionScreen() {
     setBlocked(updated);
     updateProfile({ appsToBlock: updated });
   };
+
+  useEffect(() => {
+    capture("app_blocking_setup_started");
+    screen("protection_setup");
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      const initial = initialBlockedRef.current;
+      const changed =
+        initial.length !== blocked.length ||
+        initial.some((appId) => !blocked.includes(appId));
+      if (changed) {
+        capture("app_blocking_setup_completed", {
+          selected_blocked_apps_count: blocked.length,
+        });
+      }
+    };
+  }, [blocked]);
 
   return (
     <GradientBackground>

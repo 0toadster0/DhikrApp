@@ -26,6 +26,13 @@ import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { getRandomBlockedDhikr } from "@/utils/getRandomBlockedDhikr";
 import { getRandomDua } from "@/utils/getRandomDua";
+import {
+  capture,
+  DHIKR_SOURCES,
+  hasCompletedFirstDhikr,
+  markFirstDhikrCompleted,
+  screen,
+} from "@/lib/analytics";
 
 type RitualStep = "intercept" | "mood" | "closeness" | "choose" | "dhikr" | "dua" | "complete";
 
@@ -35,7 +42,7 @@ let lastShownRitualDhikrId: BlockedDhikr["id"] | undefined;
 export default function RitualScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  const { completeSession } = useApp();
+  const { completeSession, state } = useApp();
 
   const [ritualStep, setRitualStep] = useState<RitualStep>("intercept");
   const [mood, setMood] = useState(5);
@@ -43,6 +50,7 @@ export default function RitualScreen() {
   const [dhikrCount, setDhikrCount] = useState(0);
   const [selectedDhikr, setSelectedDhikr] = useState<BlockedDhikr | null>(null);
   const [selectedDua, setSelectedDua] = useState<Dua | null>(null);
+  const [dhikrStartedAt, setDhikrStartedAt] = useState<number | null>(null);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
@@ -63,6 +71,13 @@ export default function RitualScreen() {
         return fallbackDhikr;
       }
     });
+    capture("dhikr_started", {
+      dhikr_id: "ritual_random",
+      dhikr_title: "Random dhikr",
+      category: "ritual",
+      dhikr_source: DHIKR_SOURCES[1],
+    });
+    setDhikrStartedAt(Date.now());
     setRitualStep("dhikr");
   };
 
@@ -98,6 +113,24 @@ export default function RitualScreen() {
     setDhikrCount(newCount);
 
     if (newCount >= selectedDhikr.count) {
+      const durationSeconds = dhikrStartedAt
+        ? Math.max(1, Math.round((Date.now() - dhikrStartedAt) / 1000))
+        : null;
+      capture("dhikr_completed", {
+        dhikr_id: selectedDhikr.id,
+        dhikr_title: selectedDhikr.english,
+        category: "ritual",
+        duration_seconds: durationSeconds,
+        dhikr_source: DHIKR_SOURCES[1],
+        streak_count: state.streak,
+      });
+      void (async () => {
+        const firstDone = await hasCompletedFirstDhikr();
+        if (!firstDone) {
+          capture("first_dhikr_completed");
+          await markFirstDhikrCompleted();
+        }
+      })();
       setTimeout(() => setRitualStep("complete"), 300);
     }
   };
@@ -115,6 +148,10 @@ export default function RitualScreen() {
   const handleFinish = () => {
     router.back();
   };
+
+  React.useEffect(() => {
+    screen("ritual", { ritual_step: ritualStep });
+  }, [ritualStep]);
 
   const renderRitual = () => {
     switch (ritualStep) {

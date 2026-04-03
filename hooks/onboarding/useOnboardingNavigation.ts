@@ -6,6 +6,8 @@ import { useAnimatedStyle, useSharedValue, withSequence, withTiming } from "reac
 import type { ViewStyle } from "react-native";
 
 import type { UserProfile } from "@/context/AppContext";
+import { capture, ONBOARDING_VARIANTS } from "@/lib/analytics";
+import { getOnboardingStepName } from "@/constants/onboarding/analyticsStepNames";
 import { hasBarrierPick, TOTAL_STEPS } from "@/constants/onboarding/content";
 
 export type OnboardingNavigationParams = {
@@ -79,6 +81,7 @@ export function useOnboardingNavigation({
       ...(sex ? { sex } : {}),
       onboardingComplete: true,
     });
+    capture("onboarding_completed", { onboarding_variant: ONBOARDING_VARIANTS[0] });
     router.replace("/(tabs)");
   }, [
     selectedGoals,
@@ -165,9 +168,17 @@ export function useOnboardingNavigation({
       setReflectAnimSession((s) => s + 1);
     }
     if (step < TOTAL_STEPS - 1) {
+      capture("onboarding_step_completed", {
+        step_name: getOnboardingStepName(step),
+        step_index: step,
+      });
       setStep((s) => s + 1);
       setOnboardingStep(step + 1);
     } else {
+      capture("onboarding_step_completed", {
+        step_name: getOnboardingStepName(step),
+        step_index: step,
+      });
       finishOnboarding();
     }
   }, [
@@ -199,9 +210,20 @@ export function useOnboardingNavigation({
   const toggleGoal = useCallback(
     (id: string) => {
       void Haptics.selectionAsync();
-      setSelectedGoals((prev) => (prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]));
+      setSelectedGoals((prev) => {
+        const wasSelected = prev.includes(id);
+        const next = wasSelected ? prev.filter((g) => g !== id) : [...prev, id];
+        if (!wasSelected) {
+          if (step === 10) {
+            capture("obstacle_selected", { obstacle_name: id });
+          } else {
+            capture("goal_selected", { goal_name: id });
+          }
+        }
+        return next;
+      });
     },
-    [setSelectedGoals]
+    [setSelectedGoals, step]
   );
 
   const toggleTime = useCallback(

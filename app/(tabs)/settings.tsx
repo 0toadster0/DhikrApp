@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { GradientBackground } from "@/components/GradientBackground";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
+import { capture, PLAN_TYPES, REMINDER_TYPES, screen } from "@/lib/analytics";
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -45,6 +46,10 @@ export default function SettingsScreen() {
     );
   };
 
+  React.useEffect(() => {
+    screen("settings");
+  }, []);
+
   return (
     <GradientBackground>
       <ScrollView
@@ -67,7 +72,12 @@ export default function SettingsScreen() {
               right={
                 <Switch
                   value={state.profile.notificationsEnabled}
-                  onValueChange={(v) => updateProfile({ notificationsEnabled: v })}
+                  onValueChange={(v) => {
+                    updateProfile({ notificationsEnabled: v });
+                    if (v) {
+                      capture("reminder_set", { reminder_type: REMINDER_TYPES[1] });
+                    }
+                  }}
                   trackColor={{ true: "#C4A2F7", false: "rgba(155,128,200,0.2)" }}
                   thumbColor="#f0eaff"
                 />
@@ -118,7 +128,17 @@ export default function SettingsScreen() {
                 </Text>
               </View>
               {!state.isPremium && (
-                <Pressable style={styles.upgradeBtn}>
+                <Pressable
+                  style={styles.upgradeBtn}
+                  onPress={() => {
+                    capture("paywall_viewed", {
+                      source_screen: "settings",
+                      trigger: "upgrade_button",
+                    });
+                    capture("paywall_cta_clicked", { plan_type: PLAN_TYPES[0] });
+                    capture("subscription_started", { plan_type: PLAN_TYPES[0] });
+                  }}
+                >
                   <Text style={styles.upgradeLabel}>Upgrade</Text>
                 </Pressable>
               )}

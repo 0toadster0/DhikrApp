@@ -8,12 +8,15 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import * as Notifications from "expo-notifications";
 import React, { useEffect } from "react";
+import { AppState } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { APP_OPEN_SOURCES, capture, initAnalytics, trackAppOpened } from "@/lib/analytics";
 import { AppProvider } from "@/context/AppContext";
 
 SplashScreen.preventAutoHideAsync();
@@ -44,6 +47,28 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
+
+  useEffect(() => {
+    void (async () => {
+      await initAnalytics();
+      await trackAppOpened(APP_OPEN_SOURCES[0]);
+    })();
+
+    const appStateSub = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        void trackAppOpened(APP_OPEN_SOURCES[1]);
+      }
+    });
+
+    const notificationOpenSub = Notifications.addNotificationResponseReceivedListener(() => {
+      capture("reminder_opened");
+    });
+
+    return () => {
+      appStateSub.remove();
+      notificationOpenSub.remove();
+    };
+  }, []);
 
   if (!fontsLoaded && !fontError) return null;
 
