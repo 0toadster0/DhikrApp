@@ -15,12 +15,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { GradientBackground } from "@/components/GradientBackground";
 import { MascotImage } from "@/components/MascotImage";
 import { useApp } from "@/context/AppContext";
+import { getWeeklyCompletionLog } from "@/lib/dailyCompletion";
 import { loadWeeklyInsights, type WeeklyInsights } from "@/lib/insightsLocal";
 
 const defaultWeekly: WeeklyInsights = {
   dhikrCount: 0,
   duaCount: 0,
-  weekActivity: [false, false, false, false, false, false, false],
+  weeklyCompletionLog: getWeeklyCompletionLog([]),
   streak: 0,
   longestStreak: 0,
   avgMood: "–",
@@ -51,8 +52,9 @@ export default function InsightsScreen() {
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom + 84;
 
-  const DAYS = ["S", "M", "T", "W", "T", "F", "S"];
-  const { dhikrCount, duaCount, avgMood, avgCloseness, weekActivity, streak, longestStreak, showEmptyState } =
+  /** Monday-first labels matching {@link getWeeklyCompletionLog} order. */
+  const WEEKDAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
+  const { dhikrCount, duaCount, avgMood, avgCloseness, weeklyCompletionLog, streak, longestStreak, showEmptyState } =
     weekly;
 
   return (
@@ -67,7 +69,7 @@ export default function InsightsScreen() {
         <Animated.View entering={FadeInDown.duration(400).delay(100)} style={styles.headerRow}>
           <View style={styles.headerCopy}>
             <Text style={styles.title}>Your Insights</Text>
-            <Text style={styles.sub}>Past 7 days</Text>
+            <Text style={styles.sub}>This week (Mon–Sun)</Text>
           </View>
           <View style={styles.headerMascotWrap}>
             <View style={styles.headerMascotGlow} />
@@ -101,17 +103,24 @@ export default function InsightsScreen() {
           />
           <Text style={styles.weekTitle}>This Week</Text>
           <View style={styles.weekRow}>
-            {DAYS.map((d, i) => (
-              <View key={i} style={styles.weekDay}>
-                <View
-                  style={[
-                    styles.weekDot,
-                    weekActivity[i] && styles.weekDotActive,
-                  ]}
-                />
-                <Text style={styles.weekDayLabel}>{d}</Text>
-              </View>
-            ))}
+            {WEEKDAY_LABELS.map((d, i) => {
+              const completed = weeklyCompletionLog[i]?.completedThisDay ?? false;
+              return (
+                <View key={weeklyCompletionLog[i]?.dayKey ?? i} style={styles.weekDay}>
+                  <View style={styles.weekDotWrap}>
+                    <View
+                      style={[styles.weekDot, completed && styles.weekDotActive]}
+                    />
+                    {completed ? (
+                      <View style={styles.weekDotCheckOverlay} pointerEvents="none">
+                        <Ionicons name="checkmark" size={18} color="#1a0a2e" />
+                      </View>
+                    ) : null}
+                  </View>
+                  <Text style={styles.weekDayLabel}>{d}</Text>
+                </View>
+              );
+            })}
           </View>
         </Animated.View>
 
@@ -301,6 +310,18 @@ const styles = StyleSheet.create({
   weekDay: {
     alignItems: "center",
     gap: 6,
+  },
+  weekDotWrap: {
+    width: 32,
+    height: 32,
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  weekDotCheckOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
   },
   weekDot: {
     width: 32,

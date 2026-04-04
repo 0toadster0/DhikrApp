@@ -1,6 +1,15 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import type { DhikrSession } from "@/context/AppContext";
+import {
+  completionDayKeysSorted,
+  getWeeklyCompletionLog,
+  isTimestampInLocalCalendarWeek,
+  localDayKey,
+  longestStreakFromSortedDayKeys,
+  streakEndingOn,
+  type CalendarWeekDaySlot,
+} from "@/lib/dailyCompletion";
 
 const STORAGE_KEY = "@dhikr_insights_local_v1";
 const MAX_EACH = 400;
@@ -255,19 +264,6 @@ async function write(data: Stored): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-function localDayKey(d: Date): string {
-  const y = d.getFullYear();
-  const m = d.getMonth() + 1;
-  const day = d.getDate();
-  return `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
-
-function startOfLocalDay(d: Date): Date {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
-
 async function appendIso(listKey: "ritualStarts" | "dhikrCompletions"): Promise<void> {
   const data = await read();
   const list = [...data[listKey], new Date().toISOString()];
@@ -313,72 +309,6 @@ export async function recordSessionWellbeing(mood: number, closeness?: number): 
   }
 }
 
-/** Rolling 7 local calendar days: from start of (today − 6) through current instant (inclusive). */
-function weekWindow(): { weekStart: Date; end: Date } {
-  const end = new Date();
-  const weekStart = startOfLocalDay(end);
-  weekStart.setDate(weekStart.getDate() - 6);
-  return { weekStart, end };
-}
-
-function inWeek(iso: string, weekStart: Date, end: Date): boolean {
-  const t = new Date(iso).getTime();
-  if (!Number.isFinite(t)) return false;
-  return t >= weekStart.getTime() && t <= end.getTime();
-}
-
-function uniqueSortedDayKeys(timestamps: string[]): string[] {
-  const keys = new Set<string>();
-  for (const iso of timestamps) {
-    keys.add(localDayKey(new Date(iso)));
-  }
-  return [...keys].sort();
-}
-
-/** Consecutive days with activity ending on `endKey` (YYYY-MM-DD local). */
-function streakEndingOn(dayKeys: Set<string>, endKey: string): number {
-  if (!dayKeys.has(endKey)) return 0;
-  let streak = 0;
-  let cursor = new Date(
-    Number(endKey.slice(0, 4)),
-    Number(endKey.slice(5, 7)) - 1,
-    Number(endKey.slice(8, 10)),
-  );
-  for (;;) {
-    const k = localDayKey(cursor);
-    if (!dayKeys.has(k)) break;
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
-}
-
-function longestStreakFromDayKeys(sortedDayKeys: string[]): number {
-  if (sortedDayKeys.length === 0) return 0;
-  let best = 1;
-  let run = 1;
-  for (let i = 1; i < sortedDayKeys.length; i++) {
-    const prev = new Date(
-      Number(sortedDayKeys[i - 1].slice(0, 4)),
-      Number(sortedDayKeys[i - 1].slice(5, 7)) - 1,
-      Number(sortedDayKeys[i - 1].slice(8, 10)),
-    );
-    const cur = new Date(
-      Number(sortedDayKeys[i].slice(0, 4)),
-      Number(sortedDayKeys[i].slice(5, 7)) - 1,
-      Number(sortedDayKeys[i].slice(8, 10)),
-    );
-    const diffDays = Math.round((cur.getTime() - prev.getTime()) / (24 * 60 * 60 * 1000));
-    if (diffDays === 1) {
-      run += 1;
-      best = Math.max(best, run);
-    } else {
-      run = 1;
-    }
-  }
-  return best;
-}
-
 async function backfillFromSessionsIfEmpty(sessions: DhikrSession[], data: Stored): Promise<Stored> {
   const empty =
     data.ritualStarts.length === 0 &&
@@ -407,10 +337,13 @@ async function backfillFromSessionsIfEmpty(sessions: DhikrSession[], data: Store
   return next;
 }
 
+export type { CalendarWeekDaySlot };
+
 export type WeeklyInsights = {
   dhikrCount: number;
   duaCount: number;
-  weekActivity: boolean[];
+  /** Mon → Sun slots for the current local calendar week; see {@link getWeeklyCompletionLog}. */
+  weeklyCompletionLog: CalendarWeekDaySlot[];
   streak: number;
   longestStreak: number;
   avgMood: string;
@@ -422,33 +355,24 @@ export async function loadWeeklyInsights(sessions: DhikrSession[]): Promise<Week
   let data = await read();
   data = await backfillFromSessionsIfEmpty(sessions, data);
 
-  const { weekStart, end } = weekWindow();
+  const now = new Date();
 
-  const dhikrCount = data.dhikrCompletions.filter((iso) => inWeek(iso, weekStart, end)).length;
+  const dhikrCount = data.dhikrCompletions.filter((iso) =>
+    isTimestampInLocalCalendarWeek(iso, now),
+  ).length;
   const duaCount = sessions.filter(
-    (s) => s.type === "dua" && inWeek(s.completedAt, weekStart, end),
+    (s) => s.type === "dua" && isTimestampInLocalCalendarWeek(s.completedAt, now),
   ).length;
 
-  const activeKeysWeek = new Set(
-    sessions
-      .filter((s) => inWeek(s.completedAt, weekStart, end))
-      .map((s) => localDayKey(new Date(s.completedAt))),
-  );
+  const weeklyCompletionLog = getWeeklyCompletionLog(sessions, { now });
 
-  const weekActivity: boolean[] = [];
-  for (let i = 0; i < 7; i++) {
-    const checkDate = new Date();
-    checkDate.setDate(checkDate.getDate() - (6 - i));
-    weekActivity.push(activeKeysWeek.has(localDayKey(checkDate)));
-  }
-
-  const completionDayKeys = uniqueSortedDayKeys(sessions.map((s) => s.completedAt));
+  const completionDayKeys = completionDayKeysSorted(sessions);
   const completionDaySet = new Set(completionDayKeys);
-  const todayKey = localDayKey(end);
+  const todayKey = localDayKey(now);
   const streak = streakEndingOn(completionDaySet, todayKey);
-  const longestStreak = longestStreakFromDayKeys(completionDayKeys);
+  const longestStreak = longestStreakFromSortedDayKeys(completionDayKeys);
 
-  const wellbeingWeek = data.wellbeing.filter((w) => inWeek(w.at, weekStart, end));
+  const wellbeingWeek = data.wellbeing.filter((w) => isTimestampInLocalCalendarWeek(w.at, now));
   const avgMood = averageWellbeingScores(wellbeingWeek.map((w) => w.mood));
   const closenessInWeek = wellbeingWeek.flatMap((w) =>
     w.closeness !== undefined && isWellbeingScore(w.closeness) ? [w.closeness] : [],
@@ -470,7 +394,7 @@ export async function loadWeeklyInsights(sessions: DhikrSession[]): Promise<Week
   return {
     dhikrCount,
     duaCount,
-    weekActivity,
+    weeklyCompletionLog,
     streak,
     longestStreak,
     avgMood,
