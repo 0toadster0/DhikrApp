@@ -75,7 +75,7 @@ export default function InsightsScreen() {
             >
               <MascotImage
                 variant="mag"
-                size={112}
+                size={64}
                 resizeMode="cover"
                 style={styles.headerMascot}
               />
@@ -150,22 +150,6 @@ export default function InsightsScreen() {
 
         {sessions.length === 0 && (
           <Animated.View entering={FadeInDown.duration(400).delay(500)} style={styles.emptyState}>
-            <View style={styles.emptyMascotWrap}>
-              <View style={styles.emptyMascotGlow} />
-              <LinearGradient
-                colors={["rgba(255,255,255,0.08)", "rgba(196,162,247,0.03)"]}
-                start={{ x: 0.15, y: 0 }}
-                end={{ x: 0.9, y: 1 }}
-                style={styles.emptyMascotFrame}
-              >
-                <MascotImage
-                  variant="mag"
-                  size={216}
-                  resizeMode="cover"
-                  style={styles.emptyMascot}
-                />
-              </LinearGradient>
-            </View>
             <Text style={styles.emptyText}>Complete your first ritual to see insights here.</Text>
           </Animated.View>
         )}
@@ -225,27 +209,27 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   headerMascotWrap: {
-    width: 122,
-    height: 122,
+    width: 70,
+    height: 70,
     alignItems: "center",
     justifyContent: "center",
   },
   headerMascotGlow: {
     position: "absolute",
-    width: 94,
-    height: 94,
-    borderRadius: 47,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     backgroundColor: "rgba(196,162,247,0.08)",
     shadowColor: "#C4A2F7",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
     elevation: 0,
   },
   headerMascotFrame: {
-    width: 112,
-    height: 112,
-    borderRadius: 56,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
@@ -253,15 +237,15 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.08)",
     backgroundColor: "rgba(32,14,54,0.2)",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.14,
-    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
     elevation: 0,
   },
   headerMascot: {
     width: "112%",
     height: "112%",
-    transform: [{ translateY: 56 }],
+    // Was translateY: 56 — pushes the bitmap past overflow:hidden on a 112px-tall frame (mascot clipped away).
   },
   statsRow: {
     flexDirection: "row",
@@ -394,46 +378,7 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: "center",
-    paddingVertical: 36,
-    gap: 18,
-  },
-  emptyMascotWrap: {
-    width: 232,
-    height: 232,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyMascotGlow: {
-    position: "absolute",
-    width: 188,
-    height: 188,
-    borderRadius: 94,
-    backgroundColor: "rgba(196,162,247,0.08)",
-    shadowColor: "#C4A2F7",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 0,
-  },
-  emptyMascotFrame: {
-    width: 224,
-    height: 224,
-    borderRadius: 112,
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-    backgroundColor: "rgba(32,14,54,0.2)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 20,
-    elevation: 0,
-  },
-  emptyMascot: {
-    width: "100%",
-    height: "100%",
+    paddingVertical: 20,
   },
   emptyText: {
     fontSize: 15,

@@ -1,5 +1,6 @@
 export const ONBOARDING_IMAGE_1 = require("@/assets/mascot/onboarding1.png");
 export const ONBOARDING_IMAGE_2 = require("@/assets/mascot/onboarding2.png");
+export const ONBOARDING_PAYWALL_ART = require("@/assets/images/onboarding-paywall-art.png");
 
 export type OnboardingPickOption = { id: string; label: string };
 
@@ -35,7 +36,7 @@ export const STRUGGLE_TIMES = [
   { id: "closer_daily", label: "Becoming someone who is closer to Allah in everyday life" },
 ];
 
-export const TOTAL_STEPS = 20;
+export const TOTAL_STEPS = 19;
 
 /** Onboarding age question (step 3); IDs stored in profile.ageRange. */
 export const ONBOARDING_AGE_RANGES = [

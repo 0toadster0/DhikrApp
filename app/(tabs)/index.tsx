@@ -38,6 +38,9 @@ const DAILY_VERSES = [
   },
 ];
 
+const HERO_MASCOT_BOX = 168;
+const HERO_GLOW = Math.round((248 / 272) * HERO_MASCOT_BOX);
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { state } = useApp();
@@ -59,26 +62,30 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: topPadding + 12, paddingBottom: bottomPadding },
+          { paddingTop: topPadding + 8, paddingBottom: bottomPadding },
         ]}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeInDown.duration(500).delay(100)}>
           <View style={styles.header}>
-            <View>
-              <Text style={styles.greeting}>
-                {new Date().getHours() < 12
-                  ? "Good morning"
-                  : new Date().getHours() < 17
-                  ? "Good afternoon"
-                  : "Good evening"}
-                {state.profile.name?.trim() ? `, ${state.profile.name.trim()}` : ""}
-              </Text>
-              <Text style={styles.headerSub}>Choose faith first.</Text>
-            </View>
-            <View style={styles.streakBadge}>
-              <Ionicons name="flame" size={18} color="#F5C842" />
-              <Text style={styles.streakNum}>{state.streak}</Text>
+            <Text style={styles.greeting}>
+              {new Date().getHours() < 12
+                ? "Good morning"
+                : new Date().getHours() < 17
+                ? "Good afternoon"
+                : "Good evening"}
+              {state.profile.name?.trim() ? `, ${state.profile.name.trim()}` : ""}
+            </Text>
+            <View style={styles.headerHeadlineRow}>
+              <View style={styles.headerSubWrap}>
+                <Text style={styles.headerSub}>
+                  It's a good day to choose faith first
+                </Text>
+              </View>
+              <View style={styles.streakBadge}>
+                <Ionicons name="flame" size={18} color="#F5C842" />
+                <Text style={styles.streakNum}>{state.streak}</Text>
+              </View>
             </View>
           </View>
         </Animated.View>
@@ -90,10 +97,10 @@ export default function HomeScreen() {
               <View style={styles.heroFrame}>
                 <MascotImage
                   variant="hero"
-                  size={272}
+                  size={HERO_MASCOT_BOX}
                   float
                   pulse
-                  resizeMode="cover"
+                  resizeMode="contain"
                   style={styles.heroMascot}
                 />
               </View>
@@ -210,23 +217,29 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
-    gap: 20,
+    gap: 10,
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    gap: 2,
   },
   greeting: {
     fontSize: 14,
     color: "rgba(196,162,247,0.7)",
     fontFamily: "Inter_400Regular",
   },
+  headerHeadlineRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  headerSubWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
   headerSub: {
-    fontSize: 26,
+    fontSize: 24,
     fontFamily: "Inter_700Bold",
     color: "#f0eaff",
-    marginTop: 2,
   },
   streakBadge: {
     flexDirection: "row",
@@ -248,8 +261,8 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     borderColor: "rgba(245,200,66,0.15)",
-    padding: 22,
-    gap: 10,
+    padding: 14,
+    gap: 6,
     overflow: "hidden",
   },
   verseTagRow: {
@@ -269,7 +282,7 @@ const styles = StyleSheet.create({
     color: "#f0eaff",
     fontFamily: "Inter_700Bold",
     textAlign: "right",
-    lineHeight: 34,
+    lineHeight: 30,
   },
   verseTranslit: {
     fontSize: 13,
@@ -290,28 +303,28 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     alignItems: "center",
-    marginTop: 10,
-    marginBottom: 10,
+    marginTop: 4,
+    marginBottom: 4,
   },
   heroContent: {
     width: "100%",
     alignItems: "center",
-    gap: 16,
-    paddingTop: 34,
-    paddingBottom: 28,
+    gap: 10,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   heroMascotWrap: {
-    width: 272,
-    height: 272,
+    width: HERO_MASCOT_BOX,
+    height: HERO_MASCOT_BOX,
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
-    marginBottom: 6,
+    marginBottom: 2,
   },
   heroGlow: {
     position: "absolute",
-    width: 248,
-    height: 248,
+    width: HERO_GLOW,
+    height: HERO_GLOW,
     borderRadius: 999,
     backgroundColor: "rgba(196,162,247,0.18)",
     shadowColor: "#C4A2F7",

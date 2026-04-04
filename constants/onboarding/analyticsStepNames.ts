@@ -16,9 +16,8 @@ export const ONBOARDING_STEP_NAMES: Record<number, string> = {
   14: "streak_unlock",
   15: "screen_time_permission",
   16: "notifications_permission",
-  17: "recap",
-  18: "paywall",
-  19: "ready",
+  17: "paywall",
+  18: "ready",
 };
 
 export function getOnboardingStepName(stepIndex: number): string {

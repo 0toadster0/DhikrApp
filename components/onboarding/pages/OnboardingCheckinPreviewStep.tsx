@@ -203,7 +203,7 @@ function buildCheckinLoadAnimation(stages: LoadStage[]) {
 }
 
 // —— Copy (tweak here) ——
-const REASSURANCE_HEADLINE = "You're in the right place.";
+const REASSURANCE_HEADLINE = "We've got you covered.";
 
 /** Subtitle under the ring: advances every 2s in this order, then loops. */
 const LOADING_STATUS_MESSAGES = [

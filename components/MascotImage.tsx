@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Image, ImageResizeMode, ImageStyle } from "react-native";
+import { Image, ImageResizeMode, ImageStyle, StyleSheet } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -18,8 +18,6 @@ interface Props {
   pulse?: boolean;
   resizeMode?: ImageResizeMode;
 }
-
-const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 export function MascotImage({
   variant = "basic",
@@ -62,8 +60,11 @@ export function MascotImage({
     }
   }, [pulse]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }, { scale: scale.value }],
+  const floatStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
   }));
 
   const imageStyle: ImageStyle = {
@@ -72,10 +73,25 @@ export function MascotImage({
     backgroundColor: "transparent",
   };
 
+  // Float/pulse: RN Image inside one Reanimated layer can blank on iOS; split translate vs scale across two views.
+  if (float || pulse) {
+    return (
+      <Animated.View style={[{ width: size, height: size }, floatStyle]}>
+        <Animated.View style={[{ width: size, height: size }, pulseStyle]}>
+          <Image
+            source={mascots[variant]}
+            style={[StyleSheet.absoluteFillObject, { backgroundColor: "transparent" }, style]}
+            resizeMode={resizeMode}
+          />
+        </Animated.View>
+      </Animated.View>
+    );
+  }
+
   return (
-    <AnimatedImage
+    <Image
       source={mascots[variant]}
-      style={[imageStyle, style, float || pulse ? animatedStyle : undefined]}
+      style={[imageStyle, style]}
       resizeMode={resizeMode}
     />
   );

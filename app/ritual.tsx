@@ -10,11 +10,19 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, { FadeIn, FadeInDown, ZoomIn } from "react-native-reanimated";
+import Animated, {
+  Easing,
+  FadeIn,
+  ZoomIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
+import { styles as onboardingStyles } from "@/components/onboarding/onboardingStyles";
 import { GradientBackground } from "@/components/GradientBackground";
 import { MascotImage } from "@/components/MascotImage";
 import { mascots } from "@/constants/mascots";
@@ -39,6 +47,9 @@ type RitualStep = "intercept" | "mood" | "closeness" | "choose" | "dhikr" | "dua
 let lastShownRitualDuaId: Dua["id"] | undefined;
 let lastShownRitualDhikrId: BlockedDhikr["id"] | undefined;
 
+const DHIKR_LOGO_BOX = 52;
+const DHIKR_LOGO_GLOW = 44;
+
 export default function RitualScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
@@ -51,6 +62,8 @@ export default function RitualScreen() {
   const [selectedDhikr, setSelectedDhikr] = useState<BlockedDhikr | null>(null);
   const [selectedDua, setSelectedDua] = useState<Dua | null>(null);
   const [dhikrStartedAt, setDhikrStartedAt] = useState<number | null>(null);
+
+  const dhikrPressed = useSharedValue(0);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
@@ -108,7 +121,7 @@ export default function RitualScreen() {
       return;
     }
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newCount = dhikrCount + 1;
     setDhikrCount(newCount);
 
@@ -152,6 +165,16 @@ export default function RitualScreen() {
   React.useEffect(() => {
     screen("ritual", { ritual_step: ritualStep });
   }, [ritualStep]);
+
+  React.useEffect(() => {
+    if (ritualStep === "dhikr") {
+      dhikrPressed.value = 0;
+    }
+  }, [ritualStep, dhikrPressed]);
+
+  const dhikrCardPressStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 - dhikrPressed.value * 0.012 }],
+  }));
 
   const renderRitual = () => {
     switch (ritualStep) {
@@ -226,11 +249,13 @@ export default function RitualScreen() {
                   colors={["#2d1a4a", "#3d2460"]}
                   style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
                 />
-                <Image
-                  source={mascots.tasbeeh}
-                  style={styles.chooseIcon}
-                  resizeMode="contain"
-                />
+                <View style={styles.chooseIconClip}>
+                  <Image
+                    source={mascots.tasbeeh}
+                    style={styles.chooseIcon}
+                    resizeMode="contain"
+                  />
+                </View>
                 <Text style={styles.chooseTitle}>Dhikr</Text>
                 <Text style={styles.chooseSub2}>Remembrance with{"\n"}prayer beads</Text>
               </Pressable>
@@ -256,44 +281,86 @@ export default function RitualScreen() {
         }
 
         const progress = dhikrCount / selectedDhikr.count;
+        const dhikrComplete = dhikrCount >= selectedDhikr.count;
         return (
-          <Animated.View entering={FadeIn.duration(400)} style={styles.centered}>
-            <View style={styles.dhikrMascotArt}>
-              <View style={styles.dhikrMascotGlow} />
-              <View style={styles.dhikrMascotWarmth} />
-              <View style={styles.dhikrMascotFrame}>
-                <LinearGradient
-                  colors={["rgba(255,255,255,0.14)", "rgba(255,255,255,0.03)"]}
-                  style={styles.dhikrMascotSheen}
-                />
-                <MascotImage
-                  variant="tasbeeh"
-                  size={228}
-                  float
-                  resizeMode="cover"
-                  style={styles.dhikrMascotImage}
-                />
-              </View>
-            </View>
-            <Text style={styles.dhikrProgress}>
-              {dhikrCount} / {selectedDhikr.count}
-            </Text>
+          <Animated.View entering={FadeIn.duration(400)} style={styles.dhikrStepRoot}>
             <Pressable
-              style={styles.dhikrTapArea}
+              style={styles.dhikrFullTap}
+              disabled={dhikrComplete}
               onPress={handleDhikrTap}
+              onPressIn={() => {
+                if (dhikrComplete) return;
+                dhikrPressed.value = withTiming(1, {
+                  duration: 100,
+                  easing: Easing.out(Easing.cubic),
+                });
+              }}
+              onPressOut={() => {
+                dhikrPressed.value = withTiming(0, {
+                  duration: 220,
+                  easing: Easing.out(Easing.cubic),
+                });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Tap once for each recitation, up to ${selectedDhikr.count} times`}
+              accessibilityState={{ disabled: dhikrComplete }}
             >
-              <LinearGradient
-                colors={["rgba(107,63,160,0.3)", "rgba(196,162,247,0.1)"]}
-                style={[StyleSheet.absoluteFill, { borderRadius: 120 }]}
-              />
-              <Text style={styles.dhikrArabic}>{selectedDhikr.arabic}</Text>
-              <Text style={styles.dhikrMeaning}>{selectedDhikr.english}</Text>
-              <Text style={styles.dhikrTarget}>Repeat {selectedDhikr.count} times</Text>
-              <Text style={styles.tapHint}>Tap to count</Text>
+              <View style={styles.dhikrHeaderRow}>
+                <View style={styles.dhikrLogoArt}>
+                  <View style={styles.dhikrLogoGlow} />
+                  <View style={styles.dhikrLogoFrame}>
+                    <LinearGradient
+                      colors={["rgba(255,255,255,0.14)", "rgba(255,255,255,0.03)"]}
+                      style={styles.dhikrLogoSheen}
+                    />
+                    <MascotImage
+                      variant="tasbeeh"
+                      size={DHIKR_LOGO_BOX}
+                      resizeMode="cover"
+                      style={styles.dhikrLogoImage}
+                    />
+                  </View>
+                </View>
+              </View>
+              <View style={styles.dhikrMiddle}>
+                <View style={styles.dhikrCardHintStack}>
+                  <View style={styles.dhikrCardStage}>
+                    <View style={styles.dhikrGlowHalo} pointerEvents="none" />
+                    <View style={styles.dhikrCardPressable}>
+                      <Animated.View
+                        style={[
+                          onboardingStyles.verseCard,
+                          styles.dhikrVerseCardElevated,
+                          dhikrCardPressStyle,
+                        ]}
+                      >
+                        <Text style={styles.dhikrVerseArabic}>{selectedDhikr.arabic}</Text>
+                        <Text
+                          style={[
+                            onboardingStyles.verseTranslation,
+                            styles.dhikrVerseTranslationSoft,
+                          ]}
+                        >
+                          {selectedDhikr.english}
+                        </Text>
+                        <Text style={styles.dhikrRepeatLine}>
+                          Repeat {selectedDhikr.count} times
+                        </Text>
+                        <Text style={styles.dhikrCounterInCard}>
+                          {dhikrCount} of {selectedDhikr.count}
+                        </Text>
+                      </Animated.View>
+                    </View>
+                  </View>
+                  <Text style={[onboardingStyles.stepSub, styles.dhikrTapHintOnboarding]}>
+                    Tap anywhere to count your dhikr
+                  </Text>
+                  <View style={styles.dhikrProgressBar}>
+                    <View style={[styles.dhikrProgressFill, { width: `${progress * 100}%` }]} />
+                  </View>
+                </View>
+              </View>
             </Pressable>
-            <View style={styles.dhikrProgressBar}>
-              <View style={[styles.dhikrProgressFill, { width: `${progress * 100}%` }]} />
-            </View>
           </Animated.View>
         );
 
@@ -364,6 +431,7 @@ export default function RitualScreen() {
           </Pressable>
         </View>
         <ScrollView
+          scrollEnabled={ritualStep !== "dhikr"}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
@@ -460,6 +528,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(196,162,247,0.15)",
   },
+  chooseIconClip: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    overflow: "hidden",
+  },
   chooseIcon: {
     width: 60,
     height: 60,
@@ -476,40 +550,144 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingHorizontal: 10,
   },
-  dhikrProgress: {
-    fontSize: 14,
-    color: "#9b80c8",
-    fontFamily: "Inter_500Medium",
+  dhikrStepRoot: {
+    flex: 1,
+    width: "100%",
+    alignSelf: "stretch",
+    minHeight: 480,
+    paddingTop: 8,
   },
-  dhikrMascotArt: {
-    width: 228,
-    height: 228,
-    alignItems: "center",
+  dhikrFullTap: {
+    flex: 1,
+    width: "100%",
+    alignSelf: "stretch",
+    minHeight: 440,
+  },
+  dhikrMiddle: {
+    flex: 1,
+    minHeight: 280,
+    width: "100%",
     justifyContent: "center",
+    alignItems: "center",
+  },
+  dhikrCardHintStack: {
+    width: "100%",
+    alignItems: "center",
+    gap: 28,
+    paddingBottom: 8,
+  },
+  dhikrCardStage: {
+    position: "relative",
+    width: "100%",
+    maxWidth: 356,
+    alignSelf: "center",
+    alignItems: "center",
+  },
+  dhikrGlowHalo: {
+    position: "absolute",
+    left: 4,
+    right: 4,
+    top: 6,
+    bottom: 6,
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: "rgba(196,162,247,0.42)",
+    backgroundColor: "rgba(196,162,247,0.06)",
+    shadowColor: "#B89AF0",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  dhikrCardPressable: {
+    width: "100%",
+    maxWidth: 340,
+    alignSelf: "center",
+  },
+  dhikrVerseCardElevated: {
+    paddingVertical: 26,
+    paddingHorizontal: 26,
+    gap: 11,
+    shadowColor: "#C9B2EB",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: "rgba(245,200,66,0.22)",
+    backgroundColor: "rgba(38,22,62,0.78)",
+  },
+  dhikrVerseArabic: {
+    fontSize: 32,
+    color: "#F5C842",
+    fontFamily: "Inter_700Bold",
+    textAlign: "center",
+    writingDirection: "rtl",
+    lineHeight: 46,
+    marginTop: 0,
+    marginBottom: 4,
+    textShadowColor: "rgba(245,200,66,0.35)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
+  },
+  dhikrVerseTranslationSoft: {
+    color: "rgba(232,226,248,0.76)",
+    fontSize: 15,
+    lineHeight: 24,
+    letterSpacing: 0.15,
+    marginTop: 1,
+  },
+  dhikrRepeatLine: {
+    fontSize: 14,
+    color: "rgba(228,218,252,0.68)",
+    fontFamily: "Inter_400Regular",
+    fontStyle: "italic",
+    textAlign: "center",
+    lineHeight: 22,
+    marginTop: 0,
+  },
+  dhikrCounterInCard: {
+    marginTop: 10,
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    color: "rgba(244,238,255,0.88)",
+    letterSpacing: 0.4,
+    textAlign: "center",
+  },
+  dhikrTapHintOnboarding: {
+    marginTop: 0,
+    paddingHorizontal: 12,
+    color: "rgba(208,188,248,0.82)",
+  },
+  dhikrHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    width: "100%",
+    gap: 14,
     marginBottom: 4,
   },
-  dhikrMascotGlow: {
+  dhikrLogoArt: {
+    width: DHIKR_LOGO_BOX,
+    height: DHIKR_LOGO_BOX,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dhikrLogoGlow: {
     position: "absolute",
-    width: 196,
-    height: 196,
+    width: DHIKR_LOGO_GLOW,
+    height: DHIKR_LOGO_GLOW,
     borderRadius: 999,
-    backgroundColor: "rgba(164,120,235,0.12)",
+    backgroundColor: "rgba(164,120,235,0.14)",
     shadowColor: "#A478EB",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.14,
-    shadowRadius: 22,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  dhikrMascotWarmth: {
-    position: "absolute",
-    width: 154,
-    height: 154,
-    borderRadius: 999,
-    backgroundColor: "rgba(245,200,66,0.08)",
-  },
-  dhikrMascotFrame: {
-    width: 228,
-    height: 228,
+  dhikrLogoFrame: {
+    width: DHIKR_LOGO_BOX,
+    height: DHIKR_LOGO_BOX,
     borderRadius: 999,
     overflow: "hidden",
     alignItems: "center",
@@ -518,60 +696,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.14)",
     shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 16,
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 8,
   },
-  dhikrMascotSheen: {
+  dhikrLogoSheen: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 999,
   },
-  dhikrMascotImage: {
+  dhikrLogoImage: {
     width: "100%",
     height: "100%",
     backgroundColor: "#5E3A86",
   },
-  dhikrTapArea: {
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(196,162,247,0.2)",
-  },
-  dhikrArabic: {
-    fontSize: 28,
-    color: "#f0eaff",
-    fontFamily: "Inter_700Bold",
-    textAlign: "center",
-    writingDirection: "rtl",
-    lineHeight: 40,
-  },
-  dhikrMeaning: {
-    fontSize: 13,
-    color: "#9b80c8",
-    fontFamily: "Inter_400Regular",
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  dhikrTarget: {
-    fontSize: 12,
-    color: "#C4A2F7",
-    fontFamily: "Inter_600SemiBold",
-    textAlign: "center",
-  },
-  tapHint: {
-    fontSize: 11,
-    color: "rgba(155,128,200,0.5)",
-    fontFamily: "Inter_400Regular",
-    marginTop: 4,
-  },
   dhikrProgressBar: {
-    width: 240,
+    width: "100%",
+    maxWidth: 340,
     height: 4,
     backgroundColor: "rgba(196,162,247,0.15)",
     borderRadius: 2,
@@ -579,7 +720,7 @@ const styles = StyleSheet.create({
   },
   dhikrProgressFill: {
     height: "100%",
-    backgroundColor: "#C4A2F7",
+    backgroundColor: "#F5C842",
     borderRadius: 2,
   },
   duaCard: {

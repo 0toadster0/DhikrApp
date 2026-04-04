@@ -15,12 +15,12 @@ import { OnboardingVerseMorningStep } from "./pages/OnboardingVerseMorningStep";
 import { OnboardingStreakPreviewStep } from "./pages/OnboardingStreakPreviewStep";
 import { OnboardingRemindersExplainerStep } from "./pages/OnboardingRemindersExplainerStep";
 import { OnboardingProtectionExplainerStep } from "./pages/OnboardingProtectionExplainerStep";
-import { OnboardingRecapStep } from "./pages/OnboardingRecapStep";
 import { OnboardingPaywallStep } from "./pages/OnboardingPaywallStep";
 import { OnboardingReadyStep } from "./pages/OnboardingReadyStep";
 import { OnboardingGoalsPickStep } from "./pages/OnboardingGoalsPickStep";
 import { OnboardingRelationshipGoalsStep } from "./pages/OnboardingRelationshipGoalsStep";
 import { GOAL_BARRIERS, TOTAL_STEPS } from "@/constants/onboarding/content";
+import type { PlanType } from "@/lib/analytics";
 import { computeScreenTimeReflection } from "@/lib/onboarding/screenTimeReflection";
 
 import { styles } from "./onboardingStyles";
@@ -68,13 +68,14 @@ export type OnboardingStepBodyProps = {
   goalsScrollRailStyle: AnimatedStyle<ViewStyle>;
   goalsScrollThumbStyle: AnimatedStyle<ViewStyle>;
   goalsMultiSelectShakeStyle: AnimatedStyle<ViewStyle>;
-  selectedAppsCount: number;
   ageRange: string | null;
   onSelectAgeRange: (value: string | null) => void;
   showAgeRangeHint: boolean;
   sex: string | null;
   onSelectSex: (value: string | null) => void;
   showSexHint: boolean;
+  paywallSelectedPlan: PlanType;
+  onPaywallPlanChange: (plan: PlanType) => void;
   /** Primary advance action (image steps FAB, app-lock chevron, paywall “Restore”, footer Continue, dhikr demo auto-advance). */
   onContinue: () => void;
   /** Step 13 only: marks streak entrance suppressed on the following step before advancing. */
@@ -257,12 +258,15 @@ export function OnboardingStepBody(p: OnboardingStepBodyProps) {
     case 16:
       return <OnboardingRemindersExplainerStep />;
     case 17:
-      return <OnboardingRecapStep selectedGoals={p.selectedGoals} selectedAppsCount={p.selectedAppsCount} />;
-    case 18:
       return (
-        <OnboardingPaywallStep onRestorePurchases={p.onContinue} mutedForeground={p.colors.mutedForeground} />
+        <OnboardingPaywallStep
+          onRestorePurchases={p.onContinue}
+          mutedForeground={p.colors.mutedForeground}
+          selectedPlan={p.paywallSelectedPlan}
+          onSelectPlan={p.onPaywallPlanChange}
+        />
       );
-    case 19:
+    case 18:
       return <OnboardingReadyStep displayName={p.profileNameSaved} />;
     default:
       return null;

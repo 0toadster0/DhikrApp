@@ -21,6 +21,8 @@ interface Props {
   label: string;
   onPress: () => void;
   style?: ViewStyle;
+  /** Merged into the inner gradient container (e.g. taller paywall CTA). */
+  contentContainerStyle?: ViewStyle;
   loading?: boolean;
   disabled?: boolean;
   variant?: "primary" | "ghost" | "gold";
@@ -28,7 +30,15 @@ interface Props {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export function PrimaryButton({ label, onPress, style, loading, disabled, variant = "primary" }: Props) {
+export function PrimaryButton({
+  label,
+  onPress,
+  style,
+  contentContainerStyle,
+  loading,
+  disabled,
+  variant = "primary",
+}: Props) {
   const colors = useColors();
   const scale = useSharedValue(1);
 
@@ -88,7 +98,7 @@ export function PrimaryButton({ label, onPress, style, loading, disabled, varian
       <View style={styles.innerClip}>
         <LinearGradient
           colors={gradientColors}
-          style={styles.button}
+          style={[styles.button, contentContainerStyle]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
         >

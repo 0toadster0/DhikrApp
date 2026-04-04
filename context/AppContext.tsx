@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { TOTAL_STEPS } from "@/constants/onboarding/content";
 import { ONBOARDING_VARIANTS, setUserProperties } from "@/lib/analytics";
 
 export interface UserProfile {
@@ -112,6 +113,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           ...parsed,
           profile: { ...defaultProfile, ...(parsed.profile ?? {}) },
         };
+        if (typeof merged.onboardingStep === "number" && merged.onboardingStep > 17) {
+          merged = {
+            ...merged,
+            onboardingStep: Math.min(merged.onboardingStep - 1, TOTAL_STEPS - 1),
+          };
+        }
       }
 
       if (standaloneName && !merged.profile.name?.trim()) {

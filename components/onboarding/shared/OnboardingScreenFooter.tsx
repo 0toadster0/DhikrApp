@@ -23,12 +23,19 @@ export function OnboardingScreenFooter({
   if (step === 2 || step === 12) return null;
 
   return (
-    <View style={[styles.footer, step === 13 && styles.footerDhikrProgressOnly]}>
+    <View
+      style={[
+        styles.footer,
+        isPaywallStep && styles.paywallFooter,
+        step === 13 && styles.footerDhikrProgressOnly,
+      ]}
+    >
       {step !== 13 ? (
         <PrimaryButton
           label={nextLabel}
           onPress={onNext}
-          style={styles.nextBtn}
+          style={[styles.nextBtn, isPaywallStep && styles.paywallCtaElevated]}
+          contentContainerStyle={isPaywallStep ? styles.paywallPrimaryButtonInner : undefined}
           variant={isPaywallStep ? "gold" : "primary"}
           disabled={continueDisabled}
         />

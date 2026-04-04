@@ -26,7 +26,7 @@ import {
   hasCompletedFirstDhikr,
   ONBOARDING_VARIANTS,
   PERMISSION_TYPES,
-  PLAN_TYPES,
+  type PlanType,
   REMINDER_TYPES,
   markFirstDhikrCompleted,
   screen,
@@ -147,6 +147,7 @@ export default function OnboardingScreen() {
   });
 
   const [suppressStreakRewardEntrance, setSuppressStreakRewardEntrance] = useState(false);
+  const [paywallSelectedPlan, setPaywallSelectedPlan] = useState<PlanType>("yearly_trial");
   const [, setNotificationPermissionStatus] =
     useState<Notifications.PermissionStatus | null>(null);
   const hasTrackedOnboardingStart = useRef(false);
@@ -175,6 +176,10 @@ export default function OnboardingScreen() {
     if (step !== 14) {
       setSuppressStreakRewardEntrance(false);
     }
+  }, [step]);
+
+  useEffect(() => {
+    if (step === 17) setPaywallSelectedPlan("yearly_trial");
   }, [step]);
 
   useEffect(() => {
@@ -215,7 +220,7 @@ export default function OnboardingScreen() {
       capture("permission_prompt_viewed", { permission_type: PERMISSION_TYPES[1] });
     }
 
-    if (step === 18) {
+    if (step === 17) {
       capture("paywall_viewed", {
         source_screen: "onboarding",
         trigger: "onboarding_step",
@@ -229,7 +234,7 @@ export default function OnboardingScreen() {
   const { imageSlideIntroTop, imageSlideTextMaxW } = getImageSlideLayoutMetrics(insets.top);
 
   const isImageStep = step === 0 || step === 1;
-  const isPaywallStep = step === 18;
+  const isPaywallStep = step === 17;
   const continueDisabled = step === 4 && userNameInput.trim().length === 0;
   const showBack = !isImageStep && step > 0;
   const profileNameSaved = state.profile.name?.trim();
@@ -274,14 +279,14 @@ export default function OnboardingScreen() {
         }
       }
 
-      if (step === 18) {
-        capture("paywall_cta_clicked", { plan_type: PLAN_TYPES[0] });
-        capture("subscription_started", { plan_type: PLAN_TYPES[0] });
+      if (step === 17) {
+        capture("paywall_cta_clicked", { plan_type: paywallSelectedPlan });
+        capture("subscription_started", { plan_type: paywallSelectedPlan });
         try {
-          capture("subscription_completed", { plan_type: PLAN_TYPES[0] });
+          capture("subscription_completed", { plan_type: paywallSelectedPlan });
         } catch (error) {
           capture("subscription_failed", {
-            plan_type: PLAN_TYPES[0],
+            plan_type: paywallSelectedPlan,
             failure_reason: "unknown",
           });
         }
@@ -291,7 +296,7 @@ export default function OnboardingScreen() {
     };
 
     void handleAllowPress();
-  }, [goNext, step]);
+  }, [goNext, step, paywallSelectedPlan]);
 
   return (
     <GradientBackground style={{ flex: 1 }}>
@@ -321,6 +326,7 @@ export default function OnboardingScreen() {
               styles.scrollContentGoalsStep,
             step === 9 && styles.scrollContentFrequencyStep,
             step === 13 && styles.scrollContentDhikrStep,
+            step === 17 && styles.scrollContentPaywallStep,
           ]}
           showsVerticalScrollIndicator={false}
           bounces={false}
@@ -368,13 +374,14 @@ export default function OnboardingScreen() {
             goalsScrollRailStyle={goalsScroll.goalsScrollRailStyle}
             goalsScrollThumbStyle={goalsScroll.goalsScrollThumbStyle}
             goalsMultiSelectShakeStyle={goalsMultiSelectShakeStyle}
-            selectedAppsCount={selectedApps.length}
             ageRange={ageRange}
             onSelectAgeRange={setAgeRange}
             showAgeRangeHint={showAgeRangeHint}
             sex={sex}
             onSelectSex={setSex}
             showSexHint={showSexHint}
+            paywallSelectedPlan={paywallSelectedPlan}
+            onPaywallPlanChange={setPaywallSelectedPlan}
             onContinue={goNext}
             onAdvanceFromDhikrDemo={advanceFromDhikrDemo}
             suppressStreakRewardEntrance={suppressStreakRewardEntrance}

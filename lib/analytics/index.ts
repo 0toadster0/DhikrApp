@@ -19,7 +19,7 @@ export type DhikrSource = (typeof DHIKR_SOURCES)[number];
 export const PERMISSION_TYPES = ["screen_time", "notifications"] as const;
 export type PermissionType = (typeof PERMISSION_TYPES)[number];
 
-export const PLAN_TYPES = ["yearly_trial"] as const;
+export const PLAN_TYPES = ["yearly_trial", "weekly"] as const;
 export type PlanType = (typeof PLAN_TYPES)[number];
 
 export const REMINDER_TYPES = ["onboarding_test_notification", "morning_toggle"] as const;
