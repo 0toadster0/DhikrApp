@@ -7,6 +7,11 @@ export interface UserProfile {
   name?: string;
   goals: string[];
   appsToBlock: string[];
+  /**
+   * iOS: PropertyList-encoded `FamilyActivitySelection` (base64), mirrored from native App Group.
+   * This is what Managed Settings uses to shield apps; opaque tokens cannot be derived from slug IDs.
+   */
+  familyActivitySelectionBase64?: string;
   struggleTimes: string[];
   /** Daily phone use (hours), 1–10 from onboarding — used for in-app estimates. */
   dailyPhoneHours: number;
