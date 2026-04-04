@@ -33,8 +33,10 @@ export interface DhikrSession {
 export interface AppState {
   profile: UserProfile;
   sessions: DhikrSession[];
+  /** Consecutive local days with a finished dhikr or dua (`completeSession` only; not onboarding). */
   streak: number;
   longestStreak: number;
+  /** Last calendar day (device) that had a finished dhikr or dua session. */
   lastCompletionDate: string | null;
   isPremium: boolean;
   onboardingStep: number;
@@ -76,6 +78,20 @@ const STORAGE_KEY = "@dhikr_app_state";
 
 /** Standalone key for display name; also stored in persisted `profile.name`. */
 export const USER_NAME_STORAGE_KEY = "user_name";
+
+/** Zero streak when the chain is broken (last completion was before yesterday). */
+function reconcileExpiredStreak(state: AppState): AppState {
+  if (!state.lastCompletionDate) {
+    return state.streak === 0 ? state : { ...state, streak: 0 };
+  }
+  const today = new Date().toDateString();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (state.lastCompletionDate !== today && state.lastCompletionDate !== yesterday.toDateString()) {
+    return state.streak === 0 ? state : { ...state, streak: 0 };
+  }
+  return state;
+}
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>(defaultState);
@@ -128,6 +144,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
+      const streakBefore = merged.streak;
+      merged = reconcileExpiredStreak(merged);
+      if (stored && merged.streak !== streakBefore) {
+        try {
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+        } catch {
+          // ignore
+        }
+      }
+
       if (stored || standaloneName) {
         setState(merged);
       }
@@ -167,6 +193,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const completeSession = useCallback((session: Omit<DhikrSession, "id" | "completedAt">) => {
     setState((prev) => {
+      const base = reconcileExpiredStreak(prev);
       const now = new Date();
       const today = now.toDateString();
       const newSession: DhikrSession = {
@@ -175,23 +202,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         completedAt: now.toISOString(),
       };
 
-      let newStreak = prev.streak;
-      let newLongest = prev.longestStreak;
+      let newStreak = base.streak;
+      let newLongest = base.longestStreak;
 
-      if (prev.lastCompletionDate !== today) {
+      const countsForStreak = session.type === "dhikr" || session.type === "dua";
+      if (countsForStreak && base.lastCompletionDate !== today) {
         const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
-        if (prev.lastCompletionDate === yesterday.toDateString()) {
-          newStreak = prev.streak + 1;
+        if (base.lastCompletionDate === yesterday.toDateString()) {
+          newStreak = base.streak + 1;
         } else {
           newStreak = 1;
         }
-        newLongest = Math.max(newStreak, prev.longestStreak);
+        newLongest = Math.max(newStreak, base.longestStreak);
       }
 
       const newState = {
-        ...prev,
-        sessions: [newSession, ...prev.sessions].slice(0, 200),
+        ...base,
+        sessions: [newSession, ...base.sessions].slice(0, 200),
         streak: newStreak,
         longestStreak: newLongest,
         lastCompletionDate: today,

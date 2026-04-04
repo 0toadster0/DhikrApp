@@ -34,7 +34,7 @@ export default function InsightsScreen() {
   const [weekly, setWeekly] = useState<WeeklyInsights>(defaultWeekly);
 
   const refresh = useCallback(() => {
-    // Guided ritual and onboarding dhikr demo await insights persistence before advancing, so this stays in sync with AsyncStorage.
+    // Guided ritual awaits insights persistence before advancing; onboarding demo does not write Insights.
     void loadWeeklyInsights(state.sessions).then(setWeekly);
   }, [state.sessions]);
 
@@ -146,15 +146,21 @@ export default function InsightsScreen() {
           <Ionicons name="flame" size={28} color="#F5C842" />
           <View style={styles.streakInfo}>
             <Text style={styles.streakMain}>
-              {streak > 0 ? `${streak}-day streak` : "Start your streak"}
+              {streak > 0 ? `${streak}-day streak` : "Build your streak"}
             </Text>
-            <Text style={styles.streakSub}>Longest: {longestStreak} days</Text>
+            <Text style={styles.streakSub}>
+              {longestStreak > 0
+                ? `Longest: ${longestStreak} days`
+                : "One day per finished dhikr or dua"}
+            </Text>
           </View>
         </Animated.View>
 
         {showEmptyState && (
           <Animated.View entering={FadeInDown.duration(400).delay(500)} style={styles.emptyState}>
-            <Text style={styles.emptyText}>Complete your first ritual to see insights here.</Text>
+            <Text style={styles.emptyText}>
+              Finish dhikr or read a dua to see insights here.
+            </Text>
           </Animated.View>
         )}
       </ScrollView>

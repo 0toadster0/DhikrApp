@@ -29,7 +29,7 @@ const easeOutCubic = Easing.out(Easing.cubic);
 const PRE_HANDOFF_MS = 120;
 /** Delay after handoff beat before fire appears (ms). */
 const FIRE_EMERGE_DELAY_MS = 90;
-/** Dhikr → streak crossfade: simultaneous, keep overlap brief (ms). */
+/** Dhikr → streak-preview crossfade: simultaneous, keep overlap brief (ms). */
 const CROSSFADE_MS = 260;
 /** Subtle full-screen dim peak during crossfade (0–1 multiplier → rgba). */
 const TRANSITION_DIM_PEAK = 0.14;
@@ -423,7 +423,7 @@ export function OnboardingVerseMorningStep({ onAdvance }: Props) {
         importantForAccessibility="no-hide-descendants"
       >
         <Animated.Text style={[styles.stepTitle, local.streakTitle, headlineStyle]}>
-          Streak started ✨
+          Streak preview ✨
         </Animated.Text>
 
         <View style={styles.streakPreview}>
@@ -462,7 +462,7 @@ export function OnboardingVerseMorningStep({ onAdvance }: Props) {
         </View>
 
         <Animated.Text style={[styles.stepSub, local.streakSub, subStyle]}>
-          You completed your first dhikr!
+          Your streak starts when you finish a real session after onboarding.
         </Animated.Text>
       </Animated.View>
 
@@ -516,7 +516,7 @@ export function OnboardingVerseMorningStep({ onAdvance }: Props) {
                 entering={FadeIn.duration(520).easing(Easing.out(Easing.cubic))}
                 style={local.completionLine}
               >
-                Beautiful. You’ve completed your first dhikr.
+                Beautiful. Intro dhikr complete.
               </Animated.Text>
             ) : (
               <Text style={[styles.stepSub, local.tapHint]}>Tap anywhere to count your dhikr</Text>

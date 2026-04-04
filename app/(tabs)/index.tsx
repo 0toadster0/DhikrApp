@@ -108,7 +108,9 @@ export default function HomeScreen() {
             {completedToday ? (
               <View style={styles.completedBanner}>
                 <Ionicons name="checkmark-circle" size={20} color="#C4A2F7" />
-                <Text style={styles.completedText}>Ritual complete for today</Text>
+                <Text style={styles.completedText}>
+                  Dhikr or dua finished today
+                </Text>
               </View>
             ) : (
               <Text style={styles.mascotCta}>A quiet moment before you begin.</Text>

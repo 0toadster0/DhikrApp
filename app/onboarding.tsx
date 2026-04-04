@@ -32,7 +32,6 @@ import {
   markFirstDhikrCompleted,
   screen,
 } from "@/lib/analytics";
-import { recordDhikrCompleted, recordSessionWellbeing } from "@/lib/insightsLocal";
 
 async function requestNotificationPermission() {
   const { status } = await Notifications.requestPermissionsAsync();
@@ -154,21 +153,14 @@ export default function OnboardingScreen() {
 
   const advanceFromDhikrDemo = useCallback(() => {
     void (async () => {
-      // Match guided ritual: await local insights writes before advancing so Insights (AsyncStorage) cannot lag the transition.
-      try {
-        await recordDhikrCompleted();
-        await recordSessionWellbeing(mood);
-      } catch (e) {
-        if (__DEV__) {
-          console.warn("[onboarding] insights persist before dhikr demo advance failed", e);
-        }
-      }
+      // Demo does not call completeSession, so Insights and in-app streak stay unchanged.
       capture("dhikr_completed", {
         dhikr_id: "onboarding_alhamdulillah_10",
         dhikr_title: "Alhamdulillah",
         category: "onboarding_sample",
         duration_seconds: 30,
         dhikr_source: DHIKR_SOURCES[0],
+        // Funnel context only; not the persisted app streak.
         streak_count: 1,
       });
       void (async () => {
@@ -181,7 +173,7 @@ export default function OnboardingScreen() {
       setSuppressStreakRewardEntrance(true);
       goNext();
     })();
-  }, [goNext, mood]);
+  }, [goNext]);
 
   useEffect(() => {
     if (step !== 14) {

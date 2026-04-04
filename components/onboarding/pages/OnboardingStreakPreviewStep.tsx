@@ -19,7 +19,7 @@ const EASE_OUT = Easing.out(Easing.cubic);
 const EMBER_START_SCALE = 0.88;
 
 type Props = {
-  /** After dhikr handoff: skip reward entrance so the screen matches the settled handoff. */
+  /** After dhikr handoff: skip preview entrance animation so the screen matches the settled handoff. */
   suppressRewardEntrance?: boolean;
 };
 
@@ -118,7 +118,7 @@ export function OnboardingStreakPreviewStep({ suppressRewardEntrance = false }: 
         </Text>
       </Animated.View>
 
-      <Text style={styles.stepTitle}>Streak started ✨</Text>
+      <Text style={styles.stepTitle}>How your streak works ✨</Text>
 
       <View style={styles.streakPreview}>
         {ONBOARDING_STREAK_WEEKDAY_LABELS.map((d, i) => {
@@ -150,8 +150,12 @@ export function OnboardingStreakPreviewStep({ suppressRewardEntrance = false }: 
       </View>
 
       <View style={local.copyBlock}>
-        <Text style={[styles.stepSub, local.subLead]}>You completed your first dhikr!</Text>
-        <Text style={[styles.stepSub, local.subTrail]}>Come back each day to continue your streak.</Text>
+        <Text style={[styles.stepSub, local.subLead]}>
+          Intro dhikr done — it does not add to your streak yet.
+        </Text>
+        <Text style={[styles.stepSub, local.subTrail]}>
+          After onboarding, finish dhikr or a dua each day to grow your streak.
+        </Text>
       </View>
     </>
   );

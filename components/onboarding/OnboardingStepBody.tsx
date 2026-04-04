@@ -78,7 +78,7 @@ export type OnboardingStepBodyProps = {
   onContinue: () => void;
   /** Step 13 only: marks streak entrance suppressed on the following step before advancing. */
   onAdvanceFromDhikrDemo?: () => void;
-  /** Step 14: skip streak reward entrance when arriving from dhikr handoff. */
+  /** Step 14: skip streak preview entrance when arriving from dhikr handoff. */
   suppressStreakRewardEntrance?: boolean;
 };
 

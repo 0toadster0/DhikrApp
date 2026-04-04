@@ -44,7 +44,6 @@ import {
 } from "@/lib/analytics";
 import {
   recordDhikrCompleted,
-  recordDuaStarted,
   recordRitualSessionStarted,
   recordSessionWellbeing,
 } from "@/lib/insightsLocal";
@@ -189,7 +188,6 @@ export default function RitualScreen() {
     setSelectedDhikr(null);
     const nextDua = pickNextRitualDua();
     setSelectedDua(nextDua);
-    void recordDuaStarted();
     capture("dua_started", {
       ...buildRitualEntryAnalytics(isDirectFlow, practice, "dua", entrySourceParam),
       dua_id: nextDua?.id,
@@ -313,7 +311,6 @@ export default function RitualScreen() {
     if (flow !== "direct" || practice !== "dua") return;
     if (directDuaOpenedLogged.current) return;
     directDuaOpenedLogged.current = true;
-    void recordDuaStarted();
     capture("dua_started", {
       ...buildRitualEntryAnalytics(true, practice, null, entrySourceParam),
       dua_id: selectedDua?.id,

@@ -12,12 +12,17 @@ const LEGACY_ONBOARDING_CLOSENESS_MIGRATION_FLAG_KEY =
  * Legacy onboarding (pre-fix) sometimes wrote default closeness with mood even though the UI did not
  * collect closeness. Those rows are not tagged in storage and look identical to guided ritual rows.
  *
- * A **partial** signal exists: onboarding’s dhikr demo always called `recordDhikrCompleted` immediately
- * before `recordSessionWellbeing`, and **never** called `recordRitualSessionStarted`. Guided flows always
- * call `recordRitualSessionStarted` before wellbeing, so a dhikr-paired wellbeing row with **no**
- * `ritualStarts` timestamp at or before that row’s `at` is almost certainly legacy onboarding (or the
- * same pattern without a ritual start). We only strip closeness in that case so dua completions (not
- * dhikr-paired within the window) and guided sessions (have a prior ritual start) stay intact.
+ * **Current behavior:** The onboarding dhikr demo does **not** call `recordDhikrCompleted` or
+ * `recordSessionWellbeing` — demo practice is excluded from Insights entirely. Streak (here and in
+ * app state) uses `completeSession` / session history only — full dhikr or dua completions, not
+ * ritual opens or partial taps.
+ *
+ * **Legacy migration signal:** Older builds called `recordDhikrCompleted` immediately before
+ * `recordSessionWellbeing` and never `recordRitualSessionStarted`. Guided flows call
+ * `recordRitualSessionStarted` before wellbeing, so a wellbeing row with paired dhikr timing but **no**
+ * `ritualStarts` at or before that row’s `at` is almost certainly legacy onboarding (or the same pattern
+ * without a ritual start). We only strip closeness in that case so dua completions and guided sessions
+ * stay intact.
  *
  * **Not reliably fixable:** If the user had any `ritualStarts` entry before the onboarding write (e.g.
  * direct ritual or guided earlier), we keep closeness — better a leftover fake than deleting a real score.
@@ -263,7 +268,7 @@ function startOfLocalDay(d: Date): Date {
   return x;
 }
 
-async function appendIso(listKey: "ritualStarts" | "dhikrCompletions" | "duaStarts"): Promise<void> {
+async function appendIso(listKey: "ritualStarts" | "dhikrCompletions"): Promise<void> {
   const data = await read();
   const list = [...data[listKey], new Date().toISOString()];
   data[listKey] = list.slice(-MAX_EACH);
@@ -276,10 +281,6 @@ export async function recordRitualSessionStarted(): Promise<void> {
 
 export async function recordDhikrCompleted(): Promise<void> {
   await appendIso("dhikrCompletions");
-}
-
-export async function recordDuaStarted(): Promise<void> {
-  await appendIso("duaStarts");
 }
 
 /**
@@ -391,8 +392,6 @@ async function backfillFromSessionsIfEmpty(sessions: DhikrSession[], data: Store
     next.ritualStarts.push(s.completedAt);
     if (s.type === "dhikr") {
       next.dhikrCompletions.push(s.completedAt);
-    } else {
-      next.duaStarts.push(s.completedAt);
     }
     const wb = normalizeWellbeingEntry({
       at: s.completedAt,
@@ -403,7 +402,6 @@ async function backfillFromSessionsIfEmpty(sessions: DhikrSession[], data: Store
   }
   next.ritualStarts = next.ritualStarts.slice(-MAX_EACH);
   next.dhikrCompletions = next.dhikrCompletions.slice(-MAX_EACH);
-  next.duaStarts = next.duaStarts.slice(-MAX_EACH);
   next.wellbeing = next.wellbeing.slice(-MAX_EACH);
   await write(next);
   return next;
@@ -427,10 +425,15 @@ export async function loadWeeklyInsights(sessions: DhikrSession[]): Promise<Week
   const { weekStart, end } = weekWindow();
 
   const dhikrCount = data.dhikrCompletions.filter((iso) => inWeek(iso, weekStart, end)).length;
-  const duaCount = data.duaStarts.filter((iso) => inWeek(iso, weekStart, end)).length;
+  const duaCount = sessions.filter(
+    (s) => s.type === "dua" && inWeek(s.completedAt, weekStart, end),
+  ).length;
 
-  const ritualInWeek = data.ritualStarts.filter((iso) => inWeek(iso, weekStart, end));
-  const activeKeysWeek = new Set(ritualInWeek.map((iso) => localDayKey(new Date(iso))));
+  const activeKeysWeek = new Set(
+    sessions
+      .filter((s) => inWeek(s.completedAt, weekStart, end))
+      .map((s) => localDayKey(new Date(s.completedAt))),
+  );
 
   const weekActivity: boolean[] = [];
   for (let i = 0; i < 7; i++) {
@@ -439,11 +442,11 @@ export async function loadWeeklyInsights(sessions: DhikrSession[]): Promise<Week
     weekActivity.push(activeKeysWeek.has(localDayKey(checkDate)));
   }
 
-  const allRitualDayKeys = uniqueSortedDayKeys(data.ritualStarts);
-  const ritualDaySet = new Set(allRitualDayKeys);
+  const completionDayKeys = uniqueSortedDayKeys(sessions.map((s) => s.completedAt));
+  const completionDaySet = new Set(completionDayKeys);
   const todayKey = localDayKey(end);
-  const streak = streakEndingOn(ritualDaySet, todayKey);
-  const longestStreak = longestStreakFromDayKeys(allRitualDayKeys);
+  const streak = streakEndingOn(completionDaySet, todayKey);
+  const longestStreak = longestStreakFromDayKeys(completionDayKeys);
 
   const wellbeingWeek = data.wellbeing.filter((w) => inWeek(w.at, weekStart, end));
   const avgMood = averageWellbeingScores(wellbeingWeek.map((w) => w.mood));
@@ -462,9 +465,7 @@ export async function loadWeeklyInsights(sessions: DhikrSession[]): Promise<Week
   }
 
   const showEmptyState =
-    data.ritualStarts.length === 0 &&
-    data.dhikrCompletions.length === 0 &&
-    data.duaStarts.length === 0;
+    sessions.length === 0 && data.dhikrCompletions.length === 0 && data.wellbeing.length === 0;
 
   return {
     dhikrCount,
