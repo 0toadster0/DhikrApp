@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   Easing,
@@ -40,12 +40,78 @@ import {
   hasCompletedFirstDhikr,
   markFirstDhikrCompleted,
   screen,
+  type RitualEntrySource,
 } from "@/lib/analytics";
+import {
+  recordDhikrCompleted,
+  recordDuaStarted,
+  recordRitualSessionStarted,
+  recordSessionWellbeing,
+} from "@/lib/insightsLocal";
 
 type RitualStep = "intercept" | "mood" | "closeness" | "choose" | "dhikr" | "dua" | "complete";
 
 let lastShownRitualDuaId: Dua["id"] | undefined;
 let lastShownRitualDhikrId: BlockedDhikr["id"] | undefined;
+
+function parseRouteParam(value: string | string[] | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function parseEntrySourceParam(raw: string | undefined): RitualEntrySource | undefined {
+  if (raw === "notification" || raw === "home") return raw;
+  return undefined;
+}
+
+function buildRitualEntryAnalytics(
+  isDirectFlow: boolean,
+  practice: string | undefined,
+  guidedChosenPractice: "dhikr" | "dua" | null,
+  entrySourceParam: RitualEntrySource | undefined
+) {
+  const entry_mode = isDirectFlow ? "direct" : "guided";
+  const entry_practice = isDirectFlow
+    ? practice === "dhikr"
+      ? "dhikr"
+      : practice === "dua"
+        ? "dua"
+        : null
+    : guidedChosenPractice;
+  return {
+    entry_mode,
+    entry_practice,
+    ...(entrySourceParam ? { entry_source: entrySourceParam } : {}),
+  };
+}
+
+function pickNextRitualDhikr(): BlockedDhikr | null {
+  try {
+    const nextDhikr = getRandomBlockedDhikr(lastShownRitualDhikrId);
+    lastShownRitualDhikrId = nextDhikr.id;
+
+    return nextDhikr;
+  } catch {
+    const fallbackDhikr = BLOCKED_DHIKR[0] ?? null;
+    lastShownRitualDhikrId = fallbackDhikr?.id;
+
+    return fallbackDhikr;
+  }
+}
+
+function pickNextRitualDua(): Dua | null {
+  try {
+    const nextDua = getRandomDua(lastShownRitualDuaId);
+    lastShownRitualDuaId = nextDua.id;
+
+    return nextDua;
+  } catch {
+    const fallbackDua = QURANIC_DUAS[0] ?? null;
+    lastShownRitualDuaId = fallbackDua?.id;
+
+    return fallbackDua;
+  }
+}
 
 const DHIKR_LOGO_BOX = 52;
 const DHIKR_LOGO_GLOW = 44;
@@ -55,59 +121,78 @@ export default function RitualScreen() {
   const colors = useColors();
   const { completeSession, state } = useApp();
 
-  const [ritualStep, setRitualStep] = useState<RitualStep>("intercept");
+  const params = useLocalSearchParams<{
+    flow?: string;
+    practice?: string;
+    entry_source?: string;
+  }>();
+  const flow = parseRouteParam(params.flow);
+  const practice = parseRouteParam(params.practice);
+  const entrySourceParam = parseEntrySourceParam(parseRouteParam(params.entry_source));
+  const isDirectFlow =
+    flow === "direct" && (practice === "dhikr" || practice === "dua");
+
+  const [guidedChosenPractice, setGuidedChosenPractice] = useState<"dhikr" | "dua" | null>(
+    null
+  );
+
+  const ritualEntryAnalytics = buildRitualEntryAnalytics(
+    isDirectFlow,
+    practice,
+    guidedChosenPractice,
+    entrySourceParam
+  );
+
+  const [ritualStep, setRitualStep] = useState<RitualStep>(() => {
+    if (flow === "direct" && practice === "dhikr") return "dhikr";
+    if (flow === "direct" && practice === "dua") return "dua";
+    return "intercept";
+  });
   const [mood, setMood] = useState(5);
   const [closeness, setCloseness] = useState(5);
   const [dhikrCount, setDhikrCount] = useState(0);
-  const [selectedDhikr, setSelectedDhikr] = useState<BlockedDhikr | null>(null);
-  const [selectedDua, setSelectedDua] = useState<Dua | null>(null);
-  const [dhikrStartedAt, setDhikrStartedAt] = useState<number | null>(null);
+  const [selectedDhikr, setSelectedDhikr] = useState<BlockedDhikr | null>(() =>
+    flow === "direct" && practice === "dhikr" ? pickNextRitualDhikr() : null
+  );
+  const [selectedDua, setSelectedDua] = useState<Dua | null>(() =>
+    flow === "direct" && practice === "dua" ? pickNextRitualDua() : null
+  );
+  const [dhikrStartedAt, setDhikrStartedAt] = useState<number | null>(() =>
+    flow === "direct" && practice === "dhikr" ? Date.now() : null
+  );
 
   const dhikrPressed = useSharedValue(0);
+  /** Prevents double completion from rapid taps / races (one session write + one context session). */
+  const ritualOutcomeCommittedRef = React.useRef(false);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
   const handleSelectDhikr = () => {
+    setGuidedChosenPractice("dhikr");
     setSelectedDua(null);
     setDhikrCount(0);
-    setSelectedDhikr(() => {
-      try {
-        const nextDhikr = getRandomBlockedDhikr(lastShownRitualDhikrId);
-        lastShownRitualDhikrId = nextDhikr.id;
-
-        return nextDhikr;
-      } catch {
-        const fallbackDhikr = BLOCKED_DHIKR[0] ?? null;
-        lastShownRitualDhikrId = fallbackDhikr?.id;
-
-        return fallbackDhikr;
-      }
-    });
+    setSelectedDhikr(pickNextRitualDhikr());
     capture("dhikr_started", {
       dhikr_id: "ritual_random",
       dhikr_title: "Random dhikr",
       category: "ritual",
       dhikr_source: DHIKR_SOURCES[1],
+      ...buildRitualEntryAnalytics(isDirectFlow, practice, "dhikr", entrySourceParam),
     });
     setDhikrStartedAt(Date.now());
     setRitualStep("dhikr");
   };
 
   const handleSelectDua = () => {
+    setGuidedChosenPractice("dua");
     setSelectedDhikr(null);
-    setSelectedDua(() => {
-      try {
-        const nextDua = getRandomDua(lastShownRitualDuaId);
-        lastShownRitualDuaId = nextDua.id;
-
-        return nextDua;
-      } catch {
-        const fallbackDua = QURANIC_DUAS[0] ?? null;
-        lastShownRitualDuaId = fallbackDua?.id;
-
-        return fallbackDua;
-      }
+    const nextDua = pickNextRitualDua();
+    setSelectedDua(nextDua);
+    void recordDuaStarted();
+    capture("dua_started", {
+      ...buildRitualEntryAnalytics(isDirectFlow, practice, "dua", entrySourceParam),
+      dua_id: nextDua?.id,
     });
     setRitualStep("dua");
   };
@@ -126,45 +211,126 @@ export default function RitualScreen() {
     setDhikrCount(newCount);
 
     if (newCount >= selectedDhikr.count) {
+      if (ritualOutcomeCommittedRef.current) return;
+      ritualOutcomeCommittedRef.current = true;
       const durationSeconds = dhikrStartedAt
         ? Math.max(1, Math.round((Date.now() - dhikrStartedAt) / 1000))
         : null;
-      capture("dhikr_completed", {
-        dhikr_id: selectedDhikr.id,
-        dhikr_title: selectedDhikr.english,
-        category: "ritual",
-        duration_seconds: durationSeconds,
-        dhikr_source: DHIKR_SOURCES[1],
-        streak_count: state.streak,
-      });
       void (async () => {
-        const firstDone = await hasCompletedFirstDhikr();
-        if (!firstDone) {
-          capture("first_dhikr_completed");
-          await markFirstDhikrCompleted();
+        try {
+          await recordDhikrCompleted();
+          // Direct ritual skips check-in sliders; do not persist default 5/5 as wellbeing.
+          if (!isDirectFlow) {
+            await recordSessionWellbeing(mood, closeness);
+          }
+        } catch (e) {
+          if (__DEV__) {
+            console.warn("[ritual] insights persist before completeSession failed", e);
+          }
         }
+        completeSession({
+          date: new Date().toDateString(),
+          mood,
+          closeness,
+          type: "dhikr",
+        });
+        capture("dhikr_completed", {
+          dhikr_id: selectedDhikr.id,
+          dhikr_title: selectedDhikr.english,
+          category: "ritual",
+          duration_seconds: durationSeconds,
+          dhikr_source: DHIKR_SOURCES[1],
+          streak_count: state.streak,
+          ...ritualEntryAnalytics,
+        });
+        void (async () => {
+          const firstDone = await hasCompletedFirstDhikr();
+          if (!firstDone) {
+            capture("first_dhikr_completed", ritualEntryAnalytics);
+            await markFirstDhikrCompleted();
+          }
+        })();
       })();
       setTimeout(() => setRitualStep("complete"), 300);
     }
   };
 
   const handleComplete = (type: "dhikr" | "dua") => {
-    completeSession({
-      date: new Date().toDateString(),
-      mood,
-      closeness,
-      type,
-    });
-    setRitualStep("complete");
+    if (ritualOutcomeCommittedRef.current) return;
+    ritualOutcomeCommittedRef.current = true;
+    void (async () => {
+      try {
+        if (!isDirectFlow) {
+          await recordSessionWellbeing(mood, closeness);
+        }
+      } catch (e) {
+        if (__DEV__) {
+          console.warn("[ritual] wellbeing persist before completeSession failed", e);
+        }
+      }
+      completeSession({
+        date: new Date().toDateString(),
+        mood,
+        closeness,
+        type,
+      });
+      setRitualStep("complete");
+    })();
   };
 
   const handleFinish = () => {
     router.back();
   };
 
+  const directRitualSessionLogged = React.useRef(false);
   React.useEffect(() => {
-    screen("ritual", { ritual_step: ritualStep });
-  }, [ritualStep]);
+    if (!isDirectFlow) return;
+    if (directRitualSessionLogged.current) return;
+    directRitualSessionLogged.current = true;
+    void recordRitualSessionStarted();
+    capture(
+      "ritual_session_started",
+      buildRitualEntryAnalytics(isDirectFlow, practice, guidedChosenPractice, entrySourceParam),
+    );
+  }, [isDirectFlow, flow, practice, entrySourceParam, guidedChosenPractice]);
+
+  const directDhikrStartLogged = React.useRef(false);
+  React.useEffect(() => {
+    if (flow !== "direct" || practice !== "dhikr") return;
+    if (directDhikrStartLogged.current) return;
+    directDhikrStartLogged.current = true;
+    capture("dhikr_started", {
+      dhikr_id: "ritual_random",
+      dhikr_title: "Random dhikr",
+      category: "ritual",
+      dhikr_source: DHIKR_SOURCES[1],
+      ...buildRitualEntryAnalytics(true, practice, null, entrySourceParam),
+    });
+  }, [flow, practice, entrySourceParam]);
+
+  const directDuaOpenedLogged = React.useRef(false);
+  React.useEffect(() => {
+    if (flow !== "direct" || practice !== "dua") return;
+    if (directDuaOpenedLogged.current) return;
+    directDuaOpenedLogged.current = true;
+    void recordDuaStarted();
+    capture("dua_started", {
+      ...buildRitualEntryAnalytics(true, practice, null, entrySourceParam),
+      dua_id: selectedDua?.id,
+    });
+  }, [flow, practice, entrySourceParam, selectedDua?.id]);
+
+  React.useEffect(() => {
+    screen("ritual", {
+      ritual_step: ritualStep,
+      ...buildRitualEntryAnalytics(
+        isDirectFlow,
+        practice,
+        guidedChosenPractice,
+        entrySourceParam
+      ),
+    });
+  }, [ritualStep, isDirectFlow, practice, guidedChosenPractice, entrySourceParam]);
 
   React.useEffect(() => {
     if (ritualStep === "dhikr") {
@@ -194,7 +360,11 @@ export default function RitualScreen() {
             </Text>
             <PrimaryButton
               label="I'm ready"
-              onPress={() => setRitualStep("mood")}
+              onPress={() => {
+                void recordRitualSessionStarted();
+                capture("ritual_session_started", ritualEntryAnalytics);
+                setRitualStep("mood");
+              }}
               style={styles.mainBtn}
             />
             <Pressable onPress={() => router.back()}>
@@ -386,7 +556,18 @@ export default function RitualScreen() {
           </Animated.View>
         );
 
-      case "complete":
+      case "complete": {
+        const completeTitle = isDirectFlow
+          ? practice === "dua"
+            ? `A quiet moment${"\n"}well spent.`
+            : `Your dhikr${"\n"}is complete.`
+          : `A small return${"\n"}is still a return.`;
+        const completeSub = isDirectFlow
+          ? practice === "dua"
+            ? "Thank you for reading with intention."
+            : "May Allah accept your remembrance."
+          : "You chose faith first. That matters.";
+
         return (
           <Animated.View entering={ZoomIn.duration(500)} style={styles.centered}>
             <View style={styles.completionArt}>
@@ -408,10 +589,8 @@ export default function RitualScreen() {
                 />
               </View>
             </View>
-            <Text style={styles.completeTitle}>A small return{"\n"}is still a return.</Text>
-            <Text style={styles.completeSub}>
-              You chose faith first. That matters.
-            </Text>
+            <Text style={styles.completeTitle}>{completeTitle}</Text>
+            <Text style={styles.completeSub}>{completeSub}</Text>
             <PrimaryButton
               label="Continue"
               onPress={handleFinish}
@@ -419,6 +598,7 @@ export default function RitualScreen() {
             />
           </Animated.View>
         );
+      }
     }
   };
 

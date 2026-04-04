@@ -8,7 +8,6 @@ export function useOnboardingFormState() {
   const [selectedApps, setSelectedApps] = useState<string[]>(["instagram", "tiktok", "twitter"]);
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
   const [mood, setMood] = useState(5);
-  const [closeness, setCloseness] = useState(5);
   const [dailyPhoneHours, setDailyPhoneHours] = useState(4);
   const [phoneHoursScrollLock, setPhoneHoursScrollLock] = useState(false);
   const [reflectAnimSession, setReflectAnimSession] = useState(0);
@@ -33,8 +32,6 @@ export function useOnboardingFormState() {
     setSelectedTimes,
     mood,
     setMood,
-    closeness,
-    setCloseness,
     dailyPhoneHours,
     setDailyPhoneHours,
     phoneHoursScrollLock,

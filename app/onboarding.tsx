@@ -20,6 +20,7 @@ import { useOnboardingFormState } from "@/hooks/onboarding/useOnboardingFormStat
 import { useOnboardingNavigation } from "@/hooks/onboarding/useOnboardingNavigation";
 import { useOnboardingSyncEffects } from "@/hooks/onboarding/useOnboardingSyncEffects";
 import { useColors } from "@/hooks/useColors";
+import { DHIKR_REMINDER_NOTIFICATION_DATA } from "@/constants/dhikrReminderNotification";
 import {
   capture,
   DHIKR_SOURCES,
@@ -31,6 +32,7 @@ import {
   markFirstDhikrCompleted,
   screen,
 } from "@/lib/analytics";
+import { recordDhikrCompleted, recordSessionWellbeing } from "@/lib/insightsLocal";
 
 async function requestNotificationPermission() {
   const { status } = await Notifications.requestPermissionsAsync();
@@ -42,6 +44,7 @@ async function scheduleTestNotification() {
     content: {
       title: "Don’t forget your dhikr 🤍",
       body: "Take a moment to remember Allah.",
+      data: { ...DHIKR_REMINDER_NOTIFICATION_DATA },
     },
     trigger: {
       seconds: 12,
@@ -67,8 +70,6 @@ export default function OnboardingScreen() {
     setSelectedTimes,
     mood,
     setMood,
-    closeness,
-    setCloseness,
     dailyPhoneHours,
     setDailyPhoneHours,
     phoneHoursScrollLock,
@@ -133,7 +134,6 @@ export default function OnboardingScreen() {
     selectedTimes,
     dailyPhoneHours,
     mood,
-    closeness,
     selectedApps,
     updateProfile,
     setOnboardingStep,
@@ -153,24 +153,35 @@ export default function OnboardingScreen() {
   const hasTrackedOnboardingStart = useRef(false);
 
   const advanceFromDhikrDemo = useCallback(() => {
-    capture("dhikr_completed", {
-      dhikr_id: "onboarding_alhamdulillah_10",
-      dhikr_title: "Alhamdulillah",
-      category: "onboarding_sample",
-      duration_seconds: 30,
-      dhikr_source: DHIKR_SOURCES[0],
-      streak_count: 1,
-    });
     void (async () => {
-      const firstDone = await hasCompletedFirstDhikr();
-      if (!firstDone) {
-        capture("first_dhikr_completed");
-        await markFirstDhikrCompleted();
+      // Match guided ritual: await local insights writes before advancing so Insights (AsyncStorage) cannot lag the transition.
+      try {
+        await recordDhikrCompleted();
+        await recordSessionWellbeing(mood);
+      } catch (e) {
+        if (__DEV__) {
+          console.warn("[onboarding] insights persist before dhikr demo advance failed", e);
+        }
       }
+      capture("dhikr_completed", {
+        dhikr_id: "onboarding_alhamdulillah_10",
+        dhikr_title: "Alhamdulillah",
+        category: "onboarding_sample",
+        duration_seconds: 30,
+        dhikr_source: DHIKR_SOURCES[0],
+        streak_count: 1,
+      });
+      void (async () => {
+        const firstDone = await hasCompletedFirstDhikr();
+        if (!firstDone) {
+          capture("first_dhikr_completed");
+          await markFirstDhikrCompleted();
+        }
+      })();
+      setSuppressStreakRewardEntrance(true);
+      goNext();
     })();
-    setSuppressStreakRewardEntrance(true);
-    goNext();
-  }, [goNext]);
+  }, [goNext, mood]);
 
   useEffect(() => {
     if (step !== 14) {
@@ -356,8 +367,6 @@ export default function OnboardingScreen() {
             reflectAnimSession={reflectAnimSession}
             mood={mood}
             onMoodChange={setMood}
-            closeness={closeness}
-            onClosenessChange={setCloseness}
             selectedGoals={selectedGoals}
             onToggleGoal={toggleGoal}
             showGoalsPickHint={showGoalsPickHint}

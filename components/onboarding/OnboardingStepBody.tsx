@@ -50,8 +50,6 @@ export type OnboardingStepBodyProps = {
   reflectAnimSession: number;
   mood: number;
   onMoodChange: (v: number) => void;
-  closeness: number;
-  onClosenessChange: (v: number) => void;
   selectedGoals: string[];
   onToggleGoal: (id: string) => void;
   showGoalsPickHint: boolean;

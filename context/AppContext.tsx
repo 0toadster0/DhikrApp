@@ -11,7 +11,8 @@ export interface UserProfile {
   /** Daily phone use (hours), 1–10 from onboarding — used for in-app estimates. */
   dailyPhoneHours: number;
   moodBaseline: number;
-  closenessBaseline: number;
+  /** Present only after the user submits closeness in a flow that collects it (not onboarding today). */
+  closenessBaseline?: number;
   /** Age bracket from onboarding (e.g. `14_24`, `55_plus`). */
   ageRange?: string;
   /** Sex from onboarding (`male`, `female`, `prefer_not`). */
@@ -55,7 +56,6 @@ const defaultProfile: UserProfile = {
   struggleTimes: [],
   dailyPhoneHours: 4,
   moodBaseline: 5,
-  closenessBaseline: 5,
   onboardingComplete: false,
   notificationsEnabled: false,
 };

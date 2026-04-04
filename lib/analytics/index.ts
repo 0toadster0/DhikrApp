@@ -25,6 +25,18 @@ export type PlanType = (typeof PLAN_TYPES)[number];
 export const REMINDER_TYPES = ["onboarding_test_notification", "morning_toggle"] as const;
 export type ReminderType = (typeof REMINDER_TYPES)[number];
 
+/** Ritual screen / ritual-origin dhikr segmentation (additive analytics). */
+export const RITUAL_ENTRY_MODES = ["guided", "direct"] as const;
+export type RitualEntryMode = (typeof RITUAL_ENTRY_MODES)[number];
+export const RITUAL_ENTRY_SOURCES = ["notification", "home", "unknown"] as const;
+export type RitualEntrySource = (typeof RITUAL_ENTRY_SOURCES)[number];
+
+export type RitualEntryAnalytics = {
+  entry_mode: RitualEntryMode;
+  entry_practice: "dhikr" | "dua" | null;
+  entry_source?: RitualEntrySource;
+};
+
 export type AnalyticsEventMap = {
   app_opened: {
     source: AppOpenSource;
@@ -61,12 +73,14 @@ export type AnalyticsEventMap = {
   obstacle_selected: {
     obstacle_name: string;
   };
+  /** Fired when the user begins a ritual session (guided entry past intercept, or direct ritual open). */
+  ritual_session_started: Partial<RitualEntryAnalytics> | undefined;
   dhikr_started: {
     dhikr_id: string;
     dhikr_title: string;
     category: string;
     dhikr_source?: DhikrSource;
-  };
+  } & Partial<RitualEntryAnalytics>;
   dhikr_completed: {
     dhikr_id: string;
     dhikr_title: string;
@@ -74,8 +88,11 @@ export type AnalyticsEventMap = {
     duration_seconds: number | null;
     dhikr_source?: DhikrSource;
     streak_count?: number;
-  };
-  first_dhikr_completed: undefined;
+  } & Partial<RitualEntryAnalytics>;
+  dua_started: (Partial<RitualEntryAnalytics> & { dua_id?: string }) | undefined;
+  first_dhikr_completed:
+    | undefined
+    | Partial<RitualEntryAnalytics>;
   streak_unlocked: {
     streak_day: number;
   };

@@ -6,16 +6,18 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
-import React, { useEffect } from "react";
+import type { NotificationResponse } from "expo-notifications";
+import React, { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { isDhikrReminderNotificationResponse } from "@/constants/dhikrReminderNotification";
 import { APP_OPEN_SOURCES, capture, initAnalytics, trackAppOpened } from "@/lib/analytics";
 import { AppProvider } from "@/context/AppContext";
 
@@ -35,6 +37,8 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const handledNotificationResponseIds = useRef(new Set<string>());
+
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -60,15 +64,43 @@ export default function RootLayout() {
       }
     });
 
-    const notificationOpenSub = Notifications.addNotificationResponseReceivedListener(() => {
+    return () => {
+      appStateSub.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!fontsLoaded && !fontError) return;
+
+    const handleNotificationResponse = (response: NotificationResponse) => {
+      const id =
+        response.notification.request.identifier ??
+        `${String(response.notification.date)}:${response.notification.request.content.title ?? ""}`;
+
+      if (handledNotificationResponseIds.current.has(id)) return;
+      handledNotificationResponseIds.current.add(id);
+
       capture("reminder_opened");
+
+      if (!isDhikrReminderNotificationResponse(response)) return;
+
+      router.push("/ritual?entry_source=notification");
+    };
+
+    const notificationOpenSub = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        handleNotificationResponse(response);
+      }
+    );
+
+    void Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) handleNotificationResponse(response);
     });
 
     return () => {
-      appStateSub.remove();
       notificationOpenSub.remove();
     };
-  }, []);
+  }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) return null;
 

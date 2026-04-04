@@ -134,7 +134,9 @@ export default function HomeScreen() {
         <Animated.View entering={FadeInDown.duration(500).delay(400)} style={styles.actionRow}>
           <Pressable
             style={styles.actionCard}
-            onPress={() => router.push("/ritual")}
+            onPress={() =>
+              router.push("/ritual?flow=direct&practice=dhikr&entry_source=home")
+            }
           >
             <LinearGradient
               colors={["#6B3FA0", "#9B6FE8"]}
@@ -150,7 +152,9 @@ export default function HomeScreen() {
           </Pressable>
           <Pressable
             style={styles.actionCard}
-            onPress={() => router.push("/ritual")}
+            onPress={() =>
+              router.push("/ritual?flow=direct&practice=dua&entry_source=home")
+            }
           >
             <LinearGradient
               colors={["#2a1050", "#3d2460"]}

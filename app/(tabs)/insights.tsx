@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Platform,
   ScrollView,
@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
@@ -14,42 +15,45 @@ import { Ionicons } from "@expo/vector-icons";
 import { GradientBackground } from "@/components/GradientBackground";
 import { MascotImage } from "@/components/MascotImage";
 import { useApp } from "@/context/AppContext";
+import { loadWeeklyInsights, type WeeklyInsights } from "@/lib/insightsLocal";
+
+const defaultWeekly: WeeklyInsights = {
+  dhikrCount: 0,
+  duaCount: 0,
+  weekActivity: [false, false, false, false, false, false, false],
+  streak: 0,
+  longestStreak: 0,
+  avgMood: "–",
+  avgCloseness: "–",
+  showEmptyState: true,
+};
 
 export default function InsightsScreen() {
   const insets = useSafeAreaInsets();
   const { state } = useApp();
+  const [weekly, setWeekly] = useState<WeeklyInsights>(defaultWeekly);
+
+  const refresh = useCallback(() => {
+    // Guided ritual and onboarding dhikr demo await insights persistence before advancing, so this stays in sync with AsyncStorage.
+    void loadWeeklyInsights(state.sessions).then(setWeekly);
+  }, [state.sessions]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh]),
+  );
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom + 84;
 
-  const sessions = state.sessions;
-  const last7Days = sessions.filter((s) => {
-    const d = new Date(s.completedAt);
-    const diff = (Date.now() - d.getTime()) / (1000 * 60 * 60 * 24);
-    return diff <= 7;
-  });
-
-  const dhikrCount = last7Days.filter((s) => s.type === "dhikr").length;
-  const duaCount = last7Days.filter((s) => s.type === "dua").length;
-  const avgMood =
-    last7Days.length > 0
-      ? (last7Days.reduce((a, s) => a + s.mood, 0) / last7Days.length).toFixed(1)
-      : "–";
-  const avgCloseness =
-    last7Days.length > 0
-      ? (last7Days.reduce((a, s) => a + s.closeness, 0) / last7Days.length).toFixed(1)
-      : "–";
-
   const DAYS = ["S", "M", "T", "W", "T", "F", "S"];
-  const today = new Date().getDay();
-  const weekActivity = DAYS.map((_, i) => {
-    const dayOffset = (today - (6 - i) + 7) % 7;
-    const checkDate = new Date();
-    checkDate.setDate(checkDate.getDate() - (6 - i));
-    return sessions.some(
-      (s) => new Date(s.completedAt).toDateString() === checkDate.toDateString()
-    );
-  });
+  const { dhikrCount, duaCount, avgMood, avgCloseness, weekActivity, streak, longestStreak, showEmptyState } =
+    weekly;
 
   return (
     <GradientBackground>
@@ -86,7 +90,7 @@ export default function InsightsScreen() {
         <Animated.View entering={FadeInDown.duration(400).delay(200)} style={styles.statsRow}>
           <StatCard icon="sparkles" label="Dhikr" value={dhikrCount.toString()} color="#C4A2F7" />
           <StatCard icon="book-outline" label="Duas" value={duaCount.toString()} color="#F5C842" />
-          <StatCard icon="flame" label="Streak" value={`${state.streak}d`} color="#F5C842" />
+          <StatCard icon="flame" label="Streak" value={`${streak}d`} color="#F5C842" />
         </Animated.View>
 
         <Animated.View entering={FadeInDown.duration(400).delay(300)} style={styles.weekCard}>
@@ -142,13 +146,13 @@ export default function InsightsScreen() {
           <Ionicons name="flame" size={28} color="#F5C842" />
           <View style={styles.streakInfo}>
             <Text style={styles.streakMain}>
-              {state.streak > 0 ? `${state.streak}-day streak` : "Start your streak"}
+              {streak > 0 ? `${streak}-day streak` : "Start your streak"}
             </Text>
-            <Text style={styles.streakSub}>Longest: {state.longestStreak} days</Text>
+            <Text style={styles.streakSub}>Longest: {longestStreak} days</Text>
           </View>
         </Animated.View>
 
-        {sessions.length === 0 && (
+        {showEmptyState && (
           <Animated.View entering={FadeInDown.duration(400).delay(500)} style={styles.emptyState}>
             <Text style={styles.emptyText}>Complete your first ritual to see insights here.</Text>
           </Animated.View>

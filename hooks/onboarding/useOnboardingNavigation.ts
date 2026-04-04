@@ -20,7 +20,6 @@ export type OnboardingNavigationParams = {
   selectedTimes: string[];
   dailyPhoneHours: number;
   mood: number;
-  closeness: number;
   selectedApps: string[];
   updateProfile: (updates: Partial<UserProfile>) => void;
   setOnboardingStep: (step: number) => void;
@@ -51,7 +50,6 @@ export function useOnboardingNavigation({
   selectedTimes,
   dailyPhoneHours,
   mood,
-  closeness,
   selectedApps,
   updateProfile,
   setOnboardingStep,
@@ -76,7 +74,6 @@ export function useOnboardingNavigation({
       struggleTimes: selectedTimes,
       dailyPhoneHours,
       moodBaseline: mood,
-      closenessBaseline: closeness,
       ...(ageRange ? { ageRange } : {}),
       ...(sex ? { sex } : {}),
       onboardingComplete: true,
@@ -89,7 +86,6 @@ export function useOnboardingNavigation({
     selectedTimes,
     dailyPhoneHours,
     mood,
-    closeness,
     ageRange,
     sex,
     updateProfile,
