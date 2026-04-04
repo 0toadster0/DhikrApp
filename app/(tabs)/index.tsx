@@ -16,27 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { GradientBackground } from "@/components/GradientBackground";
 import { MascotImage } from "@/components/MascotImage";
 import { useApp } from "@/context/AppContext";
-
-const DAILY_VERSES = [
-  {
-    arabic: "وَلَذِكْرُ اللَّهِ أَكْبَرُ",
-    translit: "Wa ladhikru-Llāhi akbar",
-    meaning: "And the remembrance of Allah is greatest.",
-    ref: "Quran 29:45",
-  },
-  {
-    arabic: "أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ",
-    translit: "Alā bi-dhikri-Llāhi taṭma'innu-l-qulūb",
-    meaning: "Verily, in the remembrance of Allah do hearts find rest.",
-    ref: "Quran 13:28",
-  },
-  {
-    arabic: "فَاذْكُرُونِي أَذْكُرْكُمْ",
-    translit: "Fa-dhkurūnī adhkurkum",
-    meaning: "Remember Me, and I will remember you.",
-    ref: "Quran 2:152",
-  },
-];
+import { getDailyQuranVerse } from "@/constants/quranVerses";
 
 const HERO_MASCOT_BOX = 168;
 const HERO_GLOW = Math.round((248 / 272) * HERO_MASCOT_BOX);
@@ -48,8 +28,7 @@ export default function HomeScreen() {
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom + 84;
 
-  const dayIndex = new Date().getDay() % DAILY_VERSES.length;
-  const verse = DAILY_VERSES[dayIndex];
+  const verse = getDailyQuranVerse();
 
   const today = new Date().toDateString();
   const todaySessions = state.sessions.filter(
@@ -128,9 +107,9 @@ export default function HomeScreen() {
             <Text style={styles.verseTag}>Verse of the Day</Text>
           </View>
           <Text style={styles.verseArabic}>{verse.arabic}</Text>
-          <Text style={styles.verseTranslit}>{verse.translit}</Text>
-          <Text style={styles.verseMeaning}>{verse.meaning}</Text>
-          <Text style={styles.verseRef}>{verse.ref}</Text>
+          <Text style={styles.verseTranslit}>{verse.transliteration}</Text>
+          <Text style={styles.verseMeaning}>{verse.english}</Text>
+          <Text style={styles.verseRef}>{verse.reference}</Text>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.duration(500).delay(400)} style={styles.actionRow}>
@@ -292,9 +271,10 @@ const styles = StyleSheet.create({
   },
   verseTranslit: {
     fontSize: 13,
-    color: "rgba(196,162,247,0.7)",
+    color: "rgba(240,234,255,0.62)",
     fontFamily: "Inter_400Regular",
     fontStyle: "italic",
+    lineHeight: 18,
   },
   verseMeaning: {
     fontSize: 15,
