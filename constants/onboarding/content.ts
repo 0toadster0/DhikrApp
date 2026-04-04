@@ -66,9 +66,7 @@ export const ONBOARDING_STREAK_DAY_CELL_SIZE = 46;
 export const ONBOARDING_STREAK_DAY_ROW_GAP = 5;
 
 export const ONBOARDING_REMINDER_OPTIONS = [
-  { icon: "sunny-outline" as const, label: "Morning nudge" },
-  { icon: "moon-outline" as const, label: "Before sleep" },
-  { icon: "phone-portrait-outline" as const, label: "When you're about to scroll" },
+  { icon: "phone-portrait-outline" as const, label: "Before you start scrolling" },
 ] as const;
 
 export const ONBOARDING_PROTECTION_OPTIONS = [

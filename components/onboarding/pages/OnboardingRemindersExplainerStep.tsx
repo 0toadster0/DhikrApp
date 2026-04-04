@@ -8,19 +8,26 @@ import { CenteredStep } from "../CenteredStep";
 import { styles } from "../onboardingStyles";
 
 export function OnboardingRemindersExplainerStep() {
+  const option = ONBOARDING_REMINDER_OPTIONS[0];
+
   return (
-    <CenteredStep>
-      <Ionicons name="notifications-outline" size={60} color="#C4A2F7" />
-      <Text style={styles.stepTitle}>Let us remind you{"\n"}before distraction sets in.</Text>
-      <View style={styles.notifList}>
-        {ONBOARDING_REMINDER_OPTIONS.map((n) => (
-          <View key={n.label} style={styles.notifItem}>
-            <Ionicons name={n.icon} size={20} color="#C4A2F7" />
-            <Text style={styles.notifLabel}>{n.label}</Text>
-          </View>
-        ))}
+    <CenteredStep style={styles.remindersExplainerRoot}>
+      <View style={styles.remindersIconWrap}>
+        <Ionicons name="notifications-outline" size={60} color="#C4A2F7" />
       </View>
-      <Text style={styles.stepSub}>Reminders that feel like a gentle hand on your shoulder, not a loud alarm.</Text>
+      <Text style={[styles.stepTitle, styles.remindersExplainerTitle]}>
+        Let us remind you{"\n"}before distraction sets in.
+      </Text>
+      <View style={styles.remindersMiddle}>
+        <View style={styles.remindersCardShell}>
+          <View style={styles.remindersCardGlow} pointerEvents="none" />
+          <View style={styles.remindersCard}>
+            <Ionicons name={option.icon} size={22} color="#C4A2F7" />
+            <Text style={styles.remindersCardLabel}>{option.label}</Text>
+          </View>
+        </View>
+      </View>
+      <Text style={styles.stepSub}>A gentle reminder right before you get pulled in.</Text>
     </CenteredStep>
   );
 }

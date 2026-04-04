@@ -1,14 +1,15 @@
 import React from "react";
 import {
   Alert,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from "react-native";
+import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -17,16 +18,28 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { GradientBackground } from "@/components/GradientBackground";
 import { useApp } from "@/context/AppContext";
-import { useColors } from "@/hooks/useColors";
-import { capture, PLAN_TYPES, REMINDER_TYPES, screen } from "@/lib/analytics";
+import { capture, PLAN_TYPES, screen } from "@/lib/analytics";
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
-  const colors = useColors();
-  const { state, updateProfile, resetOnboarding } = useApp();
+  const { state, resetOnboarding } = useApp();
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom + 84;
+
+  const handleEnableNotifications = async () => {
+    const { status } = await Notifications.getPermissionsAsync();
+
+    if (status !== "granted") {
+      const { status: newStatus } = await Notifications.requestPermissionsAsync();
+
+      if (newStatus !== "granted") {
+        Linking.openSettings();
+      }
+    } else {
+      Linking.openSettings();
+    }
+  };
 
   const handleReset = () => {
     Alert.alert(
@@ -64,52 +77,18 @@ export default function SettingsScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.duration(400).delay(200)}>
-          <Text style={styles.sectionLabel}>Reminders</Text>
+          <Text style={styles.sectionLabel}>Notifications</Text>
           <View style={styles.group}>
             <SettingRow
               icon="notifications-outline"
-              label="Morning reminder"
-              right={
-                <Switch
-                  value={state.profile.notificationsEnabled}
-                  onValueChange={(v) => {
-                    updateProfile({ notificationsEnabled: v });
-                    if (v) {
-                      capture("reminder_set", { reminder_type: REMINDER_TYPES[1] });
-                    }
-                  }}
-                  trackColor={{ true: "#C4A2F7", false: "rgba(155,128,200,0.2)" }}
-                  thumbColor="#f0eaff"
-                />
-              }
-            />
-            <SettingRow
-              icon="moon-outline"
-              label="Bedtime reminder"
+              label="Enable notifications"
+              onPress={handleEnableNotifications}
               right={<Ionicons name="chevron-forward" size={16} color="#9b80c8" />}
             />
           </View>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.duration(400).delay(300)}>
-          <Text style={styles.sectionLabel}>Ritual</Text>
-          <View style={styles.group}>
-            <SettingRow
-              icon="shield-checkmark-outline"
-              label="Manage protected apps"
-              onPress={() => router.push("/(tabs)/protection")}
-              right={<Ionicons name="chevron-forward" size={16} color="#9b80c8" />}
-            />
-            <SettingRow
-              icon="timer-outline"
-              label="Ritual duration"
-              rightText="30 sec"
-              right={<Text style={styles.rightText}>30 sec</Text>}
-            />
-          </View>
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.duration(400).delay(400)}>
           <Text style={styles.sectionLabel}>Subscription</Text>
           <View style={styles.group}>
             <View style={styles.subscriptionCard}>
@@ -151,7 +130,7 @@ export default function SettingsScreen() {
           </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.duration(400).delay(500)}>
+        <Animated.View entering={FadeInDown.duration(400).delay(400)}>
           <Text style={styles.sectionLabel}>Account</Text>
           <View style={styles.group}>
             <SettingRow
@@ -173,6 +152,21 @@ export default function SettingsScreen() {
           </View>
         </Animated.View>
 
+        <Animated.View entering={FadeInDown.duration(400).delay(500)}>
+          <Text style={styles.sectionLabel}>Support</Text>
+          <View style={styles.group}>
+            <SettingRow
+              icon="star-outline"
+              label="Like the app"
+              subtitle="Leave a review"
+              onPress={() => {
+                console.log("TODO: open app store review");
+              }}
+              right={<Ionicons name="chevron-forward" size={16} color="#9b80c8" />}
+            />
+          </View>
+        </Animated.View>
+
         <Text style={styles.version}>Dhikr · Version 1.0.0</Text>
       </ScrollView>
     </GradientBackground>
@@ -182,23 +176,27 @@ export default function SettingsScreen() {
 function SettingRow({
   icon,
   label,
+  subtitle,
   right,
   onPress,
   rightText,
 }: {
   icon: any;
   label: string;
+  subtitle?: string;
   right?: React.ReactNode;
   onPress?: () => void;
   rightText?: string;
 }) {
-  const colors = useColors();
   return (
     <Pressable style={styles.settingRow} onPress={onPress}>
       <View style={styles.settingIconBox}>
         <Ionicons name={icon} size={18} color="#C4A2F7" />
       </View>
-      <Text style={styles.settingLabel}>{label}</Text>
+      <View style={styles.settingLabelCol}>
+        <Text style={styles.settingLabel}>{label}</Text>
+        {subtitle ? <Text style={styles.settingSubtitle}>{subtitle}</Text> : null}
+      </View>
       <View style={styles.settingRight}>{right}</View>
     </Pressable>
   );
@@ -246,11 +244,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  settingLabel: {
+  settingLabelCol: {
     flex: 1,
+  },
+  settingLabel: {
     fontSize: 15,
     fontFamily: "Inter_400Regular",
     color: "#f0eaff",
+  },
+  settingSubtitle: {
+    fontSize: 12,
+    color: "#9b80c8",
+    fontFamily: "Inter_400Regular",
+    marginTop: 2,
   },
   settingRight: {
     alignItems: "flex-end",

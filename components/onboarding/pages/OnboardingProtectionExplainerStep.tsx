@@ -19,7 +19,6 @@ export function OnboardingProtectionExplainerStep() {
         <Text style={styles.protectionBody}>
           This app uses Screen Time to gently block distractions when you need focus most.
         </Text>
-        <Text style={styles.protectionControlNote}>You're always in control.</Text>
       </View>
       <Text style={styles.protectionPermissionHint}>This will open Apple Screen Time settings</Text>
     </CenteredStep>

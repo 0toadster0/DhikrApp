@@ -151,10 +151,7 @@ export function OnboardingStreakPreviewStep({ suppressRewardEntrance = false }: 
 
       <View style={local.copyBlock}>
         <Text style={[styles.stepSub, local.subLead]}>
-          Intro dhikr done — it does not add to your streak yet.
-        </Text>
-        <Text style={[styles.stepSub, local.subTrail]}>
-          After onboarding, finish dhikr or a dua each day to grow your streak.
+          Finish dhikr or a dua each day to grow your streak.
         </Text>
       </View>
     </>
@@ -205,7 +202,6 @@ const local = StyleSheet.create({
   },
   copyBlock: {
     alignItems: "center",
-    gap: 28,
     paddingHorizontal: 8,
     marginTop: 8,
   },
@@ -214,12 +210,5 @@ const local = StyleSheet.create({
     marginBottom: 0,
     color: "rgba(240,234,255,0.92)",
     fontFamily: "Inter_500Medium",
-  },
-  subTrail: {
-    textAlign: "center",
-    marginTop: 0,
-    color: "rgba(196,162,247,0.72)",
-    fontSize: 14,
-    lineHeight: 22,
   },
 });
